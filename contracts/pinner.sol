@@ -3,6 +3,7 @@ pragma solidity ^0.5.3;
 interface Pinner {
     // Returns the current rate in wei per GigaByteHour.
     function rate() external view returns (uint);
+    
     function pin(string calldata cid) external payable returns (bool);
 
     event Pinned(string indexed cid, uint gbh);
