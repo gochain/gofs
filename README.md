@@ -1,6 +1,7 @@
 # GoChain Filesystem CLI
 
 ```sh
+> gofs help
 NAME:
    gofs - GoChain filesystem cli tool
 
@@ -12,7 +13,9 @@ VERSION:
 
 COMMANDS:
      pin      Pin a CID
+     cost     Get the current storage cost in wei per GigaByteHour.
      add      Add and pin a file.
+     status   Get the current storage cost in wei per GigaByteHour.
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:

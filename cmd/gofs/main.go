@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/urfave/cli"
 
@@ -44,12 +43,19 @@ func main() {
 		{
 			Name:  "pin",
 			Usage: "Pin a CID",
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				cid := c.Args().First()
 				if cid == "" {
-					log.Fatalln("Missing CID")
+					return errors.New("missing CID")
 				}
-				Pin(ctx, url, cid)
+				return gofs.Pin(ctx, cid, gofs.MainnetAddress)
+			},
+		},
+		{
+			Name:  "cost",
+			Usage: "Get the current storage cost in wei per GigaByteHour.",
+			Action: func(c *cli.Context) error {
+				return gofs.Rate(ctx, gofs.MainnetRPCURL, gofs.MainnetAddress)
 			},
 		},
 		{
@@ -62,46 +68,28 @@ func main() {
 					Destination: &recursive,
 				},
 			},
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				path := c.Args().First()
 				if path == "" {
-					log.Fatalln("Missing file path")
+					return errors.New("missing file path")
 				}
-				Add(ctx, url, path)
+				return gofs.Add(ctx, url, path)
+			},
+		},
+		{
+			Name:  "status",
+			Usage: "Get the current storage cost in wei per GigaByteHour.",
+			Action: func(c *cli.Context) error {
+				cid := c.Args().First()
+				if cid == "" {
+					return errors.New("missing CID")
+				}
+				return gofs.Status(ctx, url, cid)
 			},
 		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 	}
-}
-
-func Pin(ctx context.Context, url, cid string) {
-	c := gofs.NewClient(url)
-	pr, err := c.Pin(ctx, cid)
-	if err != nil {
-		log.Fatalf("Failed to pin %q: %v", cid, err)
-	}
-	if pr.Pinned {
-		fmt.Println("File pinned.")
-	} else {
-		fmt.Println("Pinning in progress.")
-	}
-	fmt.Println("Pinned until:", time.Unix(pr.Expiration, 0))
-}
-
-func Add(ctx context.Context, url, path string) {
-	c := gofs.NewClient(url)
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatalf("Failed to open file %q: %v", path, err)
-	}
-	defer f.Close()
-	ar, err := c.Add(ctx, f)
-	if err != nil {
-		log.Fatalf("Failed to add file %q: %v", path, err)
-	}
-	fmt.Println("File uploaded and pinned.")
-	fmt.Println("Pinned until:", time.Unix(ar.Expiration, 0))
 }
