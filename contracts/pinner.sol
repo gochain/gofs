@@ -3,10 +3,10 @@ pragma solidity ^0.5.3;
 interface Pinner {
     // Returns the current rate in wei per GigaByteHour.
     function rate() external view returns (uint);
-    
-    function pin(string calldata cid) external payable returns (bool);
 
-    event Pinned(string indexed cid, uint gbh);
+    function pin(bytes calldata cid) external payable returns (bool);
+
+    event Pinned(bytes indexed cid, uint gbh);
 }
 
 
@@ -38,7 +38,11 @@ contract GOFSPinner is Pinner, owned {
         rate = _rate;
     }
 
-    function pin(string memory cid) public payable returns (bool) {
+    function pin(bytes memory cid) public payable returns (bool) {
+        require(
+            !(cid[0] == 0x12 && cid[1] == 0x20),
+            "Version 0 CID not allowed"
+        );
         require(
             msg.value >= rate,
             "Value too low."

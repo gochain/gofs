@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gochain-io/gochain/v3/common"
+	cid "github.com/ipfs/go-cid"
 )
 
 const (
@@ -21,7 +22,7 @@ type API interface {
 	// Add puts new data and temporarily pins.
 	Add(context.Context, io.Reader) (AddResponse, error)
 	// Status returns the status of a CID.
-	Status(ctx context.Context, cid string) (StatusResponse, error)
+	Status(ctx context.Context, ci cid.Cid) (StatusResponse, error)
 }
 
 type AddResponse struct {
@@ -30,7 +31,8 @@ type AddResponse struct {
 }
 
 type StatusResponse struct {
-	Expiration int64 `json:"expiration"` // Unix timestamp.
+	Pinned     bool  `json:"pinned"`
+	Expiration int64 `json:"expiration,omitempty"` // Unix timestamp.
 }
 
 func NewClient(url string) API {
@@ -62,7 +64,7 @@ func (c *client) Add(ctx context.Context, r io.Reader) (AddResponse, error) {
 	return ar, nil
 }
 
-func (c *client) Status(ctx context.Context, cid string) (StatusResponse, error) {
+func (c *client) Status(ctx context.Context, ci cid.Cid) (StatusResponse, error) {
 	resp, err := http.Get(c.url + "status")
 	if err != nil {
 		return StatusResponse{}, err

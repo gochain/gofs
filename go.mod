@@ -7,6 +7,7 @@ require (
 	github.com/gochain-io/gochain/v3 v3.0.11
 	github.com/gochain-io/web3 v0.0.36
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/ipfs/go-cid v0.0.1
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect

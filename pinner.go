@@ -28,7 +28,7 @@ var (
 )
 
 // PinnerABI is the input ABI used to generate the binding from.
-const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"string\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"cid\",\"type\":\"string\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
+const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
 
 // PinnerBin is the compiled bytecode used for deploying new contracts.
 const PinnerBin = `0x`
@@ -214,24 +214,24 @@ func (_Pinner *PinnerCallerSession) Rate() (*big.Int, error) {
 	return _Pinner.Contract.Rate(&_Pinner.CallOpts)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x512dc43a.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(string cid) returns(bool)
-func (_Pinner *PinnerTransactor) Pin(opts *bind.TransactOpts, cid string) (*types.Transaction, error) {
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerTransactor) Pin(opts *bind.TransactOpts, cid []byte) (*types.Transaction, error) {
 	return _Pinner.contract.Transact(opts, "pin", cid)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x512dc43a.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(string cid) returns(bool)
-func (_Pinner *PinnerSession) Pin(cid string) (*types.Transaction, error) {
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerSession) Pin(cid []byte) (*types.Transaction, error) {
 	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x512dc43a.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(string cid) returns(bool)
-func (_Pinner *PinnerTransactorSession) Pin(cid string) (*types.Transaction, error) {
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerTransactorSession) Pin(cid []byte) (*types.Transaction, error) {
 	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid)
 }
 
@@ -309,10 +309,10 @@ type PinnerPinned struct {
 	Raw types.Log // Blockchain specific contextual infos
 }
 
-// FilterPinned is a free log retrieval operation binding the contract event 0xd5c80c56a0faa2c9b824904cc96fee1a1eaeeca758b33cbfccbf4b42c0ff9d13.
+// FilterPinned is a free log retrieval operation binding the contract event 0xa0d90cefad6d4f81c3b726e011627beb8a079c24c0215d178fcb1225ae9ea6d4.
 //
-// Solidity: event Pinned(string indexed cid, uint256 gbh)
-func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, cid []string) (*PinnerPinnedIterator, error) {
+// Solidity: event Pinned(bytes indexed cid, uint256 gbh)
+func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, cid [][]byte) (*PinnerPinnedIterator, error) {
 
 	var cidRule []interface{}
 	for _, cidItem := range cid {
@@ -326,10 +326,10 @@ func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, cid []string)
 	return &PinnerPinnedIterator{contract: _Pinner.contract, event: "Pinned", logs: logs, sub: sub}, nil
 }
 
-// WatchPinned is a free log subscription operation binding the contract event 0xd5c80c56a0faa2c9b824904cc96fee1a1eaeeca758b33cbfccbf4b42c0ff9d13.
+// WatchPinned is a free log subscription operation binding the contract event 0xa0d90cefad6d4f81c3b726e011627beb8a079c24c0215d178fcb1225ae9ea6d4.
 //
-// Solidity: event Pinned(string indexed cid, uint256 gbh)
-func (_Pinner *PinnerFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *PinnerPinned, cid []string) (event.Subscription, error) {
+// Solidity: event Pinned(bytes indexed cid, uint256 gbh)
+func (_Pinner *PinnerFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *PinnerPinned, cid [][]byte) (event.Subscription, error) {
 
 	var cidRule []interface{}
 	for _, cidItem := range cid {
