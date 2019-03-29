@@ -37,7 +37,7 @@
     "inputs": [
       {
         "name": "cid",
-        "type": "string"
+        "type": "bytes"
       }
     ],
     "name": "pin",
@@ -57,7 +57,7 @@
       {
         "indexed": true,
         "name": "cid",
-        "type": "string"
+        "type": "bytes"
       },
       {
         "indexed": false,

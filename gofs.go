@@ -11,10 +11,14 @@ import (
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/goclient"
 	"github.com/gochain-io/web3"
+	cid "github.com/ipfs/go-cid"
 )
 
-func Pin(ctx context.Context, cid string, contract common.Address) error {
-	//TODO validate CID
+func Pin(ctx context.Context, ci string, contract common.Address) error {
+	cid, err := cid.Parse(ci)
+	if err != nil {
+		return err
+	}
 	gc, err := goclient.Dial(MainnetRPCURL)
 	if err != nil {
 		return err
@@ -27,7 +31,7 @@ func Pin(ctx context.Context, cid string, contract common.Address) error {
 		Context: ctx,
 		//TODO set value
 	}
-	_, err = p.Pin(opts, cid)
+	_, err = p.Pin(opts, cid.Bytes())
 	if err != nil {
 		return fmt.Errorf("failed to pin %q: %v", cid, err)
 	}
@@ -88,8 +92,11 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 	return nil
 }
 
-func Status(ctx context.Context, url, cid string) error {
-	//TODO validate CID
+func Status(ctx context.Context, url, ci string) error {
+	cid, err := cid.Decode(ci)
+	if err != nil {
+		return err
+	}
 	st, err := NewClient(url).Status(ctx, cid)
 	if err != nil {
 		return err
