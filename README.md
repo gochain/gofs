@@ -13,7 +13,8 @@ VERSION:
 
 COMMANDS:
      pin      Pin a CID
-     cost     Get the current storage cost in wei per GigaByteHour.
+     rate     Get the current storage rate in wei per GigaByteHour.
+     cost     Get the current storage cost in wei for the given GigaByteHour.
      add      Add and pin a file.
      status   Get the current storage cost in wei per GigaByteHour.
      help, h  Shows a list of commands or help for one command
