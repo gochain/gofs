@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gochain-io/gochain/v3/core/types"
+
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/goclient"
@@ -50,12 +52,23 @@ func main() {
 		{
 			Name:  "pin",
 			Usage: "Pin a CID",
+			Flags: []cli.Flag{
+				cli.Uint64Flag{
+					Name:  "duration, d",
+					Usage: "Storage duration in hours.",
+					Value: 1,
+				},
+			},
 			Action: func(c *cli.Context) error {
 				cid := c.Args().First()
 				if cid == "" {
 					return errors.New("missing CID")
 				}
-				return Pin(ctx, cid, gofs.MainnetAddress)
+				dur := c.Uint64("duration")
+				if dur == 0 {
+					return fmt.Errorf("duration missing or invalid")
+				}
+				return Pin(ctx, gofs.MainnetRPCURL, gofs.MainnetAddress, cid, dur)
 			},
 		},
 		{
@@ -128,7 +141,7 @@ func main() {
 	}
 }
 
-func Pin(ctx context.Context, ci string, contract common.Address) error {
+func Pin(ctx context.Context, url string, contract common.Address, ci string, dur uint64) error {
 	cid, err := cid.Parse(ci)
 	if err != nil {
 		return err
@@ -136,7 +149,7 @@ func Pin(ctx context.Context, ci string, contract common.Address) error {
 	if cid.Version() == 0 {
 		return errors.New("version 0 CID not supported")
 	}
-	gc, err := goclient.Dial(gofs.MainnetRPCURL)
+	gc, err := goclient.Dial(url)
 	if err != nil {
 		return err
 	}
@@ -146,16 +159,24 @@ func Pin(ctx context.Context, ci string, contract common.Address) error {
 	}
 	opts := &bind.TransactOpts{
 		Context: ctx,
-		//TODO set value
 	}
-	_, err = p.Pin(opts, cid.Bytes())
+	tx, err := p.Pin(opts, cid.Bytes(), big.NewInt(int64(dur)))
 	if err != nil {
 		return fmt.Errorf("failed to pin %q: %v", cid, err)
 	}
-	//TODO wait for receipt, parse log
-	var gbh int64
-	fmt.Printf("Purchased %d GigaByte Hours of storage for %s.\n", gbh, cid)
-	return nil
+	r, err := WaitForReceipt(ctx, gc, tx.Hash())
+	if err != nil {
+		return fmt.Errorf("failed to get receipt for tx %s: %v", tx.Hash().Hex(), err)
+	}
+	switch r.Status {
+	case types.ReceiptStatusFailed:
+		return fmt.Errorf("tx %s failed", tx.Hash().Hex())
+	case types.ReceiptStatusSuccessful:
+		fmt.Printf("Purchased %d GigaByte Hours of storage for %s with tx %s.\n", dur, cid, tx.Hash().Hex())
+		return nil
+	default:
+		return fmt.Errorf("tx %s unrecognized receipt status: %d", tx.Hash().Hex(), r.Status)
+	}
 }
 
 func Add(ctx context.Context, url, path string) error {
@@ -190,7 +211,7 @@ func Cost(ctx context.Context, rpcurl string, contract common.Address, size, dur
 	gbhs := size * dur
 	cost := new(big.Int).Mul(rate, big.NewInt(int64(gbhs)))
 
-	fmt.Printf(costStr(size, dur, cost))
+	fmt.Println(costStr(size, dur, cost))
 
 	return nil
 }
@@ -213,7 +234,8 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 		return err
 	}
 	fmt.Printf("Current storage rate: %d wei per GigaByteHour.", rate)
-	//TODO optionally accept params for gbs and hrs instead
+
+	fmt.Println("Cost:")
 	for _, vals := range []struct {
 		gbs uint64
 		hrs uint64
@@ -230,7 +252,7 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 		gbh := big.NewInt(int64(vals.gbs * vals.hrs))
 		cost := new(big.Int).Mul(gbh, rate)
 
-		fmt.Print(fmt.Printf(costStr(vals.gbs, vals.hrs, cost)))
+		fmt.Println("\t", costStr(vals.gbs, vals.hrs, cost))
 	}
 	return nil
 }
@@ -259,4 +281,21 @@ func Status(ctx context.Context, url, ci string) error {
 	}
 
 	return nil
+}
+
+// WaitForReceipt polls for a transaction receipt until it is available, or ctx is cancelled.
+func WaitForReceipt(ctx context.Context, client *goclient.Client, hash common.Hash) (*types.Receipt, error) {
+	for {
+		receipt, err := client.TransactionReceipt(ctx, hash)
+		if err == nil && receipt != nil {
+			return receipt, nil
+		} else if err != nil {
+			return nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
 }

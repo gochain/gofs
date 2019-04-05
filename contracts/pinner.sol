@@ -4,7 +4,7 @@ interface Pinner {
     // Returns the current rate in wei per GigaByteHour.
     function rate() external view returns (uint);
 
-    function pin(bytes calldata cid) external payable returns (bool);
+    function pin(bytes calldata cid, uint gbh) external payable returns (bool);
 
     event Pinned(bytes indexed cid, uint gbh);
 }
@@ -39,7 +39,7 @@ contract GOFSPinner is Pinner, owned {
     }
 
     //TODO calculate and document gas usage
-    // transfer: 2300 gas
+        // transfer: 2300 gas
     function pin(bytes memory cid, uint gbh) public payable returns (bool) {
         require(
             !(cid[0] == 0x12 && cid[1] == 0x20),
@@ -49,7 +49,7 @@ contract GOFSPinner is Pinner, owned {
             msg.value >= rate,
             "Value too low."
         );
-        msg.sender.transfer(cost(gbh));
+        msg.sender.transfer(gbh*rate);
         emit Pinned(cid, gbh);
     }
 }

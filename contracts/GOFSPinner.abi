@@ -38,44 +38,6 @@
       {
         "name": "cid",
         "type": "bytes"
-      }
-    ],
-    "name": "pin",
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "gbh",
-        "type": "uint256"
-      }
-    ],
-    "name": "cost",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "cid",
-        "type": "bytes"
       },
       {
         "name": "gbh",
