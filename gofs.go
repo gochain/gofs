@@ -2,11 +2,16 @@ package gofs
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/gochain-io/gochain/v3"
+
+	"github.com/gochain-io/gochain/v3/crypto"
 
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
 	"github.com/gochain-io/gochain/v3/common"
@@ -66,10 +71,10 @@ func AddFile(ctx context.Context, url, path string) (AddResponse, error) {
 	return NewClient(url).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, url string, contract common.Address, ci string, dur uint64) (common.Hash, *types.Receipt, error) {
+func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) (common.Hash, *types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
-		return common.Hash{}, nil, err
+		return common.Hash{}, nil, fmt.Errorf("invalid cid %q: %v", ci, err)
 	}
 	if cid.Version() == 0 {
 		return common.Hash{}, nil, errors.New("version 0 CID not supported")
@@ -82,8 +87,19 @@ func Pin(ctx context.Context, url string, contract common.Address, ci string, du
 	if err != nil {
 		return common.Hash{}, nil, err
 	}
+	rate, err := p.Rate(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+	cost := new(big.Int).Mul(rate, big.NewInt(int64(dur)))
 	opts := &bind.TransactOpts{
 		Context: ctx,
+		From:    crypto.PubkeyToAddress(pk.PublicKey),
+		Signer: func(s types.Signer, _ common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			return types.SignTx(tx, s, pk)
+		},
+		GasLimit: 50000,
+		Value:    cost,
 	}
 	tx, err := p.Pin(opts, cid.Bytes(), big.NewInt(int64(dur)))
 	if err != nil {
@@ -102,7 +118,7 @@ func WaitForReceipt(ctx context.Context, client *goclient.Client, hash common.Ha
 		receipt, err := client.TransactionReceipt(ctx, hash)
 		if err == nil && receipt != nil {
 			return receipt, nil
-		} else if err != nil {
+		} else if err != nil && err != gochain.NotFound {
 			return nil, err
 		}
 		select {

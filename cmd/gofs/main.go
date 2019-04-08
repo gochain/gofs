@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/gochain-io/gochain/v3/crypto"
 
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/core/types"
@@ -67,7 +71,11 @@ func main() {
 				cli.Uint64Flag{
 					Name:  "duration, d",
 					Usage: "Storage duration in hours.",
-					Value: 1,
+				},
+				cli.StringFlag{
+					Name:   "private-key, pk",
+					Usage:  "Private key.",
+					EnvVar: "WEB3_PRIVATE_KEY",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -79,18 +87,23 @@ func main() {
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
 				}
-				contract, err := parseContract(c)
+				contract, err := parseContract(contract)
 				if err != nil {
 					return err
 				}
-				return Pin(ctx, rpc, contract, cid, dur)
+				pkStr := c.String("private-key")
+				pk, err := crypto.HexToECDSA(strings.TrimPrefix(pkStr, "0x"))
+				if err != nil {
+					return fmt.Errorf("invalid private key %q: %v", pkStr, err)
+				}
+				return Pin(ctx, rpc, contract, pk, cid, dur)
 			},
 		},
 		{
 			Name:  "rate",
 			Usage: "Get the current storage rate in wei per GigaByteHour.",
 			Action: func(c *cli.Context) error {
-				contract, err := parseContract(c)
+				contract, err := parseContract(contract)
 				if err != nil {
 					return err
 				}
@@ -121,7 +134,7 @@ func main() {
 				if size == 0 {
 					return fmt.Errorf("size missing or invalid")
 				}
-				contract, err := parseContract(c)
+				contract, err := parseContract(contract)
 				if err != nil {
 					return err
 				}
@@ -148,7 +161,7 @@ func main() {
 		},
 		{
 			Name:  "status",
-			Usage: "Get the current storage cost in wei per GigaByteHour.",
+			Usage: "Get the current storage status for a CID.",
 			Action: func(c *cli.Context) error {
 				cid := c.Args().First()
 				if cid == "" {
@@ -157,6 +170,8 @@ func main() {
 				return Status(ctx, api, cid)
 			},
 		},
+		//TODO gofs logs CID (filter logs, start/end blocks)
+		//TODO by user too? do we need to index user in the event?
 	}
 	err := app.Run(os.Args)
 	if err != nil {
@@ -164,18 +179,17 @@ func main() {
 	}
 }
 
-func parseContract(c *cli.Context) (common.Address, error) {
-	contract := c.String("contract")
+func parseContract(contract string) (common.Address, error) {
 	if !common.IsHexAddress(contract) {
 		return common.Address{}, fmt.Errorf("invalid hex contract address: %s", contract)
 	}
 	return common.HexToAddress(contract), nil
 }
 
-func Pin(ctx context.Context, url string, contract common.Address, ci string, dur uint64) error {
-	h, r, err := gofs.Pin(ctx, url, contract, ci, dur)
+func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) error {
+	h, r, err := gofs.Pin(ctx, url, contract, pk, ci, dur)
 	if err != nil {
-		return fmt.Errorf("failed to get receipt for tx %s: %v", h.Hex(), err)
+		return fmt.Errorf("failed to pin: %v", err)
 	}
 	switch r.Status {
 	case types.ReceiptStatusFailed:
@@ -210,7 +224,7 @@ func Cost(ctx context.Context, rpcurl string, contract common.Address, size, dur
 }
 
 func costStr(size uint64, dur uint64, cost *big.Int) string {
-	return fmt.Sprintf("%d GBs for %s: %s", size, time.Duration(dur)*time.Hour, web3.WeiAsBase(cost))
+	return fmt.Sprintf("%d GBs for %s: %s GO", size, time.Duration(dur)*time.Hour, web3.WeiAsBase(cost))
 }
 
 func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
@@ -219,7 +233,7 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 		return err
 	}
 	//TODO friendlier units?
-	fmt.Printf("Current storage rate: %d wei per GigaByteHour.", rate)
+	fmt.Printf("Current storage rate: %d wei per GigaByteHour.\n\n", rate)
 
 	fmt.Println("Cost:")
 	for _, vals := range []struct {

@@ -34,6 +34,10 @@ contract GOFSPinner is Pinner, owned {
     // Rate in wei per GigaByteHour.
     uint public rate; //TODO initial rate? static? constructor?
 
+    constructor(uint _rate) public {
+        rate = _rate;
+    }
+
     function setRate(uint _rate) public onlyOwner returns (bool) {
         rate = _rate;
     }
@@ -45,11 +49,13 @@ contract GOFSPinner is Pinner, owned {
             !(cid[0] == 0x12 && cid[1] == 0x20),
             "Version 0 CID not allowed"
         );
+        uint cost = gbh*rate;
         require(
-            msg.value >= rate,
+            msg.value >= cost,
             "Value too low."
         );
-        msg.sender.transfer(gbh*rate);
+        // refund excess
+        msg.sender.transfer(msg.value - cost);
         emit Pinned(cid, gbh);
     }
 }

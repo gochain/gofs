@@ -20,7 +20,9 @@ COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --url value    gofs api url (default: "https://gofs.io/api/v0/")
-   --help, -h     show help
-   --version, -v  print the version
+   --url value       GOFS API URL. (default: "https://gofs.io/api/v0/") [$GOFS_API]
+   --contract value  Contract address. (default: "0x0000000000000000000000000000000000001234") [$GOFS_CONTRACT]
+   --rpc value       RPC URL. (default: "https://rpc.gochain.io") [$GOFS_RPC]
+   --help, -h        show help
+   --version, -v     print the version
 ```
