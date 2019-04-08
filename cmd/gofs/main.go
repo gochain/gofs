@@ -10,13 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gochain-io/gochain/v3/core/types"
-
-	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
 	"github.com/gochain-io/gochain/v3/common"
-	"github.com/gochain-io/gochain/v3/goclient"
+	"github.com/gochain-io/gochain/v3/core/types"
 	"github.com/gochain-io/web3"
-	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli"
 
 	"github.com/gochain-io/gofs"
@@ -38,14 +34,29 @@ func main() {
 	app.Name = "gofs"
 	app.Version = "0.0.1"
 	app.Usage = "GoChain filesystem cli tool"
-	var url string
+	var api, rpc, contract string
 	var recursive bool
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "url",
-			Usage:       "gofs api url",
+			Usage:       "GOFS API URL.",
 			Value:       gofs.APIURL,
-			Destination: &url,
+			EnvVar:      "GOFS_API",
+			Destination: &api,
+		},
+		cli.StringFlag{
+			Name:        "contract",
+			Usage:       "Contract address.",
+			Value:       gofs.MainnetAddress.Hex(),
+			EnvVar:      "GOFS_CONTRACT",
+			Destination: &contract,
+		},
+		cli.StringFlag{
+			Name:        "rpc",
+			Usage:       "RPC URL.",
+			Value:       gofs.MainnetRPCURL,
+			EnvVar:      "GOFS_RPC",
+			Destination: &rpc,
 		},
 	}
 	app.Commands = []cli.Command{
@@ -68,14 +79,22 @@ func main() {
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
 				}
-				return Pin(ctx, gofs.MainnetRPCURL, gofs.MainnetAddress, cid, dur)
+				contract, err := parseContract(c)
+				if err != nil {
+					return err
+				}
+				return Pin(ctx, rpc, contract, cid, dur)
 			},
 		},
 		{
 			Name:  "rate",
 			Usage: "Get the current storage rate in wei per GigaByteHour.",
 			Action: func(c *cli.Context) error {
-				return Rate(ctx, gofs.MainnetRPCURL, gofs.MainnetAddress)
+				contract, err := parseContract(c)
+				if err != nil {
+					return err
+				}
+				return Rate(ctx, rpc, contract)
 			},
 		},
 		{
@@ -102,7 +121,11 @@ func main() {
 				if size == 0 {
 					return fmt.Errorf("size missing or invalid")
 				}
-				return Cost(ctx, gofs.MainnetRPCURL, gofs.MainnetAddress, size, dur)
+				contract, err := parseContract(c)
+				if err != nil {
+					return err
+				}
+				return Cost(ctx, rpc, contract, size, dur)
 			},
 		},
 		{
@@ -120,7 +143,7 @@ func main() {
 				if path == "" {
 					return errors.New("missing file path")
 				}
-				return Add(ctx, url, path)
+				return Add(ctx, api, path)
 			},
 		},
 		{
@@ -131,7 +154,7 @@ func main() {
 				if cid == "" {
 					return errors.New("missing CID")
 				}
-				return Status(ctx, url, cid)
+				return Status(ctx, api, cid)
 			},
 		},
 	}
@@ -141,51 +164,32 @@ func main() {
 	}
 }
 
+func parseContract(c *cli.Context) (common.Address, error) {
+	contract := c.String("contract")
+	if !common.IsHexAddress(contract) {
+		return common.Address{}, fmt.Errorf("invalid hex contract address: %s", contract)
+	}
+	return common.HexToAddress(contract), nil
+}
+
 func Pin(ctx context.Context, url string, contract common.Address, ci string, dur uint64) error {
-	cid, err := cid.Parse(ci)
+	h, r, err := gofs.Pin(ctx, url, contract, ci, dur)
 	if err != nil {
-		return err
-	}
-	if cid.Version() == 0 {
-		return errors.New("version 0 CID not supported")
-	}
-	gc, err := goclient.Dial(url)
-	if err != nil {
-		return err
-	}
-	p, err := gofs.NewPinner(contract, gc)
-	if err != nil {
-		return err
-	}
-	opts := &bind.TransactOpts{
-		Context: ctx,
-	}
-	tx, err := p.Pin(opts, cid.Bytes(), big.NewInt(int64(dur)))
-	if err != nil {
-		return fmt.Errorf("failed to pin %q: %v", cid, err)
-	}
-	r, err := WaitForReceipt(ctx, gc, tx.Hash())
-	if err != nil {
-		return fmt.Errorf("failed to get receipt for tx %s: %v", tx.Hash().Hex(), err)
+		return fmt.Errorf("failed to get receipt for tx %s: %v", h.Hex(), err)
 	}
 	switch r.Status {
 	case types.ReceiptStatusFailed:
-		return fmt.Errorf("tx %s failed", tx.Hash().Hex())
+		return fmt.Errorf("tx %s failed", h.Hex())
 	case types.ReceiptStatusSuccessful:
-		fmt.Printf("Purchased %d GigaByte Hours of storage for %s with tx %s.\n", dur, cid, tx.Hash().Hex())
+		fmt.Printf("Purchased %d GigaByte Hours of storage for %s with tx %s.\n", dur, ci, h.Hex())
 		return nil
 	default:
-		return fmt.Errorf("tx %s unrecognized receipt status: %d", tx.Hash().Hex(), r.Status)
+		return fmt.Errorf("tx %s unrecognized receipt status: %d", h.Hex(), r.Status)
 	}
 }
 
 func Add(ctx context.Context, url, path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("failed to open file %q: %v", path, err)
-	}
-	defer f.Close()
-	ar, err := gofs.NewClient(url).Add(ctx, f)
+	ar, err := gofs.AddFile(ctx, url, path)
 	if err != nil {
 		return fmt.Errorf("failed to add file %q: %v", path, err)
 	}
@@ -194,22 +198,11 @@ func Add(ctx context.Context, url, path string) error {
 	return nil
 }
 
-// Cost calculates the cost of storage size Giga Bytes for dur hours at the current rate.
 func Cost(ctx context.Context, rpcurl string, contract common.Address, size, dur uint64) error {
-	gc, err := goclient.Dial(rpcurl)
+	_, cost, err := gofs.Cost(ctx, rpcurl, contract, size, dur)
 	if err != nil {
 		return err
 	}
-	p, err := gofs.NewPinner(contract, gc)
-	if err != nil {
-		return err
-	}
-	rate, err := p.Rate(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return err
-	}
-	gbhs := size * dur
-	cost := new(big.Int).Mul(rate, big.NewInt(int64(gbhs)))
 
 	fmt.Println(costStr(size, dur, cost))
 
@@ -221,18 +214,11 @@ func costStr(size uint64, dur uint64, cost *big.Int) string {
 }
 
 func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
-	gc, err := goclient.Dial(rpcurl)
+	rate, err := gofs.Rate(ctx, rpcurl, contract)
 	if err != nil {
 		return err
 	}
-	p, err := gofs.NewPinner(contract, gc)
-	if err != nil {
-		return err
-	}
-	rate, err := p.Rate(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return err
-	}
+	//TODO friendlier units?
 	fmt.Printf("Current storage rate: %d wei per GigaByteHour.", rate)
 
 	fmt.Println("Cost:")
@@ -258,14 +244,7 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 }
 
 func Status(ctx context.Context, url, ci string) error {
-	cid, err := cid.Decode(ci)
-	if err != nil {
-		return err
-	}
-	if cid.Version() == 0 {
-		return errors.New("version 0 CID not supported")
-	}
-	st, err := gofs.NewClient(url).Status(ctx, cid)
+	st, err := gofs.Status(ctx, url, ci)
 	if err != nil {
 		return err
 	}
@@ -281,21 +260,4 @@ func Status(ctx context.Context, url, ci string) error {
 	}
 
 	return nil
-}
-
-// WaitForReceipt polls for a transaction receipt until it is available, or ctx is cancelled.
-func WaitForReceipt(ctx context.Context, client *goclient.Client, hash common.Hash) (*types.Receipt, error) {
-	for {
-		receipt, err := client.TransactionReceipt(ctx, hash)
-		if err == nil && receipt != nil {
-			return receipt, nil
-		} else if err != nil {
-			return nil, err
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(2 * time.Second):
-		}
-	}
 }

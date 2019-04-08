@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	APIURL        = "https://gofs.io/api/v0/" //TODO
+	APIURL        = "https://gofs.io/api/v0/"
 	MainnetRPCURL = "https://rpc.gochain.io"
 )
 
@@ -31,7 +31,6 @@ type AddResponse struct {
 }
 
 type StatusResponse struct {
-	Pinned     bool  `json:"pinned"`
 	Expiration int64 `json:"expiration,omitempty"` // Unix timestamp.
 }
 
