@@ -28,7 +28,7 @@ var (
 )
 
 // PinnerABI is the input ABI used to generate the binding from.
-const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"},{\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
+const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"},{\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
 
 // PinnerBin is the compiled bytecode used for deploying new contracts.
 const PinnerBin = `0x`
@@ -186,6 +186,32 @@ func (_Pinner *PinnerTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Tr
 // Transact invokes the (paid) contract method with params as input values.
 func (_Pinner *PinnerTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _Pinner.Contract.contract.Transact(opts, method, params...)
+}
+
+// Deployed is a free data retrieval call binding the contract method 0xf905c15a.
+//
+// Solidity: function deployed() constant returns(uint256)
+func (_Pinner *PinnerCaller) Deployed(opts *bind.CallOpts) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _Pinner.contract.Call(opts, out, "deployed")
+	return *ret0, err
+}
+
+// Deployed is a free data retrieval call binding the contract method 0xf905c15a.
+//
+// Solidity: function deployed() constant returns(uint256)
+func (_Pinner *PinnerSession) Deployed() (*big.Int, error) {
+	return _Pinner.Contract.Deployed(&_Pinner.CallOpts)
+}
+
+// Deployed is a free data retrieval call binding the contract method 0xf905c15a.
+//
+// Solidity: function deployed() constant returns(uint256)
+func (_Pinner *PinnerCallerSession) Deployed() (*big.Int, error) {
+	return _Pinner.Contract.Deployed(&_Pinner.CallOpts)
 }
 
 // Rate is a free data retrieval call binding the contract method 0x2c4e722e.

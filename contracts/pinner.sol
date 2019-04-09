@@ -4,6 +4,9 @@ interface Pinner {
     // Returns the current rate in wei per GigaByteHour.
     function rate() external view returns (uint);
 
+    // Returns the number of the block when this contract was deployed.
+    function deployed() external view returns (uint);
+
     function pin(bytes calldata cid, uint gbh) external payable returns (bool);
 
     event Pinned(bytes indexed cid, uint gbh);
@@ -32,10 +35,12 @@ contract owned {
 
 contract GOFSPinner is Pinner, owned {
     // Rate in wei per GigaByteHour.
-    uint public rate; //TODO initial rate? static? constructor?
+    uint public rate;
+    uint public deployed;
 
     constructor(uint _rate) public {
         rate = _rate;
+        deployed = block.number;
     }
 
     function setRate(uint _rate) public onlyOwner returns (bool) {
