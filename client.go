@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gochain-io/gochain/v3/common"
 	cid "github.com/ipfs/go-cid"
@@ -26,12 +27,12 @@ type API interface {
 }
 
 type AddResponse struct {
-	CID        string `json:"cid"`
-	Expiration int64  `json:"expiration"` // Unix timestamp.
+	CID        string    `json:"cid"`
+	Expiration time.Time `json:"expiration"` // Unix timestamp.
 }
 
 type StatusResponse struct {
-	Expiration int64 `json:"expiration,omitempty"` // Unix timestamp.
+	Expiration time.Time `json:"expiration,omitempty"` // Unix timestamp.
 }
 
 func NewClient(url string) API {
