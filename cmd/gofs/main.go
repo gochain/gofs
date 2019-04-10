@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -10,16 +11,19 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"text/tabwriter"
 	"time"
 
-	"github.com/gochain-io/gochain/v3/crypto"
+	"github.com/gochain-io/gochain/v3/common/hexutil"
+
+	"github.com/gochain-io/gofs"
 
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/core/types"
+	"github.com/gochain-io/gochain/v3/crypto"
 	"github.com/gochain-io/web3"
+	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli"
-
-	"github.com/gochain-io/gofs"
 )
 
 func main() {
@@ -87,9 +91,9 @@ func main() {
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
 				}
-				contract, err := parseContract(contract)
+				contract, err := parseAddress(contract)
 				if err != nil {
-					return err
+					return fmt.Errorf("invalid contract: %v", err)
 				}
 				pkStr := c.String("private-key")
 				pk, err := crypto.HexToECDSA(strings.TrimPrefix(pkStr, "0x"))
@@ -103,16 +107,16 @@ func main() {
 			Name:  "rate",
 			Usage: "Get the current storage rate in wei per GigaByteHour.",
 			Action: func(c *cli.Context) error {
-				contract, err := parseContract(contract)
+				contract, err := parseAddress(contract)
 				if err != nil {
-					return err
+					return fmt.Errorf("invalid contract: %v", err)
 				}
 				return Rate(ctx, rpc, contract)
 			},
 		},
 		{
 			Name:  "cost",
-			Usage: "Get the current storage cost in wei for the given GigaByteHour.",
+			Usage: "Get the current storage cost in wei for the given size and duration.",
 			Flags: []cli.Flag{
 				cli.Uint64Flag{
 					Name:  "duration, d",
@@ -134,9 +138,9 @@ func main() {
 				if size == 0 {
 					return fmt.Errorf("size missing or invalid")
 				}
-				contract, err := parseContract(contract)
+				contract, err := parseAddress(contract)
 				if err != nil {
-					return err
+					return fmt.Errorf("invalid contract: %v", err)
 				}
 				return Cost(ctx, rpc, contract, size, dur)
 			},
@@ -170,8 +174,66 @@ func main() {
 				return Status(ctx, api, cid)
 			},
 		},
-		//TODO gofs logs CID (filter logs, start/end blocks)
-		//TODO by user too? do we need to index user in the event?
+		{
+			Name:  "events",
+			Usage: "Get Pinned events from filtered logs.",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "hash",
+					Usage: "Specific block hash",
+				},
+				cli.Int64Flag{
+					Name:  "from",
+					Usage: "Starting block number.",
+				},
+				cli.Int64Flag{
+					Name:  "to",
+					Usage: "Ending block number.",
+				},
+				cli.StringFlag{
+					Name:  "cid",
+					Usage: "CID to filter on.",
+				},
+				cli.StringFlag{
+					Name:  "user",
+					Usage: "User to filter on.",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				contract, err := parseAddress(contract)
+				if err != nil {
+					return fmt.Errorf("invalid contract: %v", err)
+				}
+				var f gofs.EventFilter
+				if c.IsSet("hash") {
+					hash := c.String("hash")
+					b, err := hex.DecodeString(strings.TrimPrefix(hash, "0x"))
+					if err != nil {
+						return fmt.Errorf("invalid hex for hash %q: %v", hash, err)
+					} else if len(b) != common.HashLength {
+						return fmt.Errorf("invalid hash len %d bytes: must be %d", len(b), common.HashLength)
+					}
+					h := common.BytesToHash(b)
+					f.Hash = &h
+				}
+				if c.IsSet("from") {
+					f.From = big.NewInt(c.Int64("from"))
+				}
+				if c.IsSet("to") {
+					f.To = big.NewInt(c.Int64("to"))
+				}
+				f.CID = c.String("cid")
+				if c.IsSet("user") {
+					if a, err := parseAddress(c.String("user")); err != nil {
+						return fmt.Errorf("invalid user: %v", err)
+					} else {
+						f.User = &a
+					}
+				}
+
+				return Events(ctx, rpc, contract, f)
+			},
+		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {
@@ -179,15 +241,15 @@ func main() {
 	}
 }
 
-func parseContract(contract string) (common.Address, error) {
-	if !common.IsHexAddress(contract) {
-		return common.Address{}, fmt.Errorf("invalid hex contract address: %s", contract)
+func parseAddress(addr string) (common.Address, error) {
+	if !common.IsHexAddress(addr) {
+		return common.Address{}, fmt.Errorf("invalid hex address: %s", addr)
 	}
-	return common.HexToAddress(contract), nil
+	return common.HexToAddress(addr), nil
 }
 
-func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) error {
-	h, r, err := gofs.Pin(ctx, url, contract, pk, ci, dur)
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) error {
+	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, dur)
 	if err != nil {
 		return fmt.Errorf("failed to pin: %v", err)
 	}
@@ -195,15 +257,16 @@ func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.Pri
 	case types.ReceiptStatusFailed:
 		return fmt.Errorf("tx %s failed", h.Hex())
 	case types.ReceiptStatusSuccessful:
-		fmt.Printf("Purchased %d GigaByte Hours of storage for %s with tx %s.\n", dur, ci, h.Hex())
+		fmt.Printf("Purchased %d GigaByte Hours of storage for %s.\n", dur, ci)
+		fmt.Printf(`https://testnet-explorer.gochain.io/tx/%s`, h.Hex())
 		return nil
 	default:
 		return fmt.Errorf("tx %s unrecognized receipt status: %d", h.Hex(), r.Status)
 	}
 }
 
-func Add(ctx context.Context, url, path string) error {
-	ar, err := gofs.AddFile(ctx, url, path)
+func Add(ctx context.Context, apiURL, path string) error {
+	ar, err := gofs.AddFile(ctx, apiURL, path)
 	if err != nil {
 		return fmt.Errorf("failed to add file %q: %v", path, err)
 	}
@@ -212,8 +275,8 @@ func Add(ctx context.Context, url, path string) error {
 	return nil
 }
 
-func Cost(ctx context.Context, rpcurl string, contract common.Address, size, dur uint64) error {
-	_, cost, err := gofs.Cost(ctx, rpcurl, contract, size, dur)
+func Cost(ctx context.Context, rpcURL string, contract common.Address, size, dur uint64) error {
+	_, cost, err := gofs.Cost(ctx, rpcURL, contract, size, dur)
 	if err != nil {
 		return err
 	}
@@ -227,8 +290,8 @@ func costStr(size uint64, dur uint64, cost *big.Int) string {
 	return fmt.Sprintf("%d GBs for %s: %s GO", size, time.Duration(dur)*time.Hour, web3.WeiAsBase(cost))
 }
 
-func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
-	rate, err := gofs.Rate(ctx, rpcurl, contract)
+func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
+	rate, err := gofs.Rate(ctx, rpcURL, contract)
 	if err != nil {
 		return err
 	}
@@ -257,8 +320,8 @@ func Rate(ctx context.Context, rpcurl string, contract common.Address) error {
 	return nil
 }
 
-func Status(ctx context.Context, url, ci string) error {
-	st, err := gofs.Status(ctx, url, ci)
+func Status(ctx context.Context, apiURL, ci string) error {
+	st, err := gofs.Status(ctx, apiURL, ci)
 	if err != nil {
 		return err
 	}
@@ -271,6 +334,33 @@ func Status(ctx context.Context, url, ci string) error {
 	} else {
 		fmt.Printf("Expired %s ago at %s.\n", -until, st.Expiration)
 	}
+
+	return nil
+}
+
+func Events(ctx context.Context, rpcURL string, contract common.Address, f gofs.EventFilter) error {
+	events, err := gofs.Events(ctx, rpcURL, contract, f)
+	if err != nil {
+		return err
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
+	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tGBH\t")
+	for _, e := range events {
+		ci, err := cid.Parse(e.Cid)
+		if err != nil {
+			return fmt.Errorf("invalid cid %s: %v", hexutil.Encode(e.Cid), err)
+		}
+		fmt.Fprintf(w,
+			"%d\t%d\t%d\t%t\t%s\t%d\t\n",
+			e.Raw.BlockNumber, //TODO why are all these idxs 0?
+			e.Raw.TxIndex,
+			e.Raw.Index,
+			e.Raw.Removed,
+			ci.String(),
+			e.Gbh,
+		)
+	}
+	w.Flush()
 
 	return nil
 }

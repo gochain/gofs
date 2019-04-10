@@ -9,7 +9,7 @@ interface Pinner {
 
     function pin(bytes calldata cid, uint gbh) external payable returns (bool);
 
-    event Pinned(bytes indexed cid, uint gbh);
+    event Pinned(address indexed user, bytes indexed cidIdx, bytes cid, uint gbh);
 }
 
 
@@ -61,6 +61,6 @@ contract GOFSPinner is Pinner, owned {
         );
         // refund excess
         msg.sender.transfer(msg.value - cost);
-        emit Pinned(cid, gbh);
+        emit Pinned(msg.sender, cid, cid, gbh);
     }
 }

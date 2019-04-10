@@ -7,18 +7,29 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/gochain-io/gochain/v3/accounts/abi"
+
 	"github.com/gochain-io/gochain/v3"
-
-	"github.com/gochain-io/gochain/v3/crypto"
-
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/core/types"
+	"github.com/gochain-io/gochain/v3/crypto"
 	"github.com/gochain-io/gochain/v3/goclient"
 	cid "github.com/ipfs/go-cid"
 )
+
+var pinnerABI abi.ABI
+
+func init() {
+	parsed, err := abi.JSON(strings.NewReader(PinnerABI))
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse generated abi: %v", err))
+	}
+	pinnerABI = parsed
+}
 
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
 	gc, err := goclient.Dial(rpcURL)
@@ -62,16 +73,16 @@ func Status(ctx context.Context, apiURL, ci string) (StatusResponse, error) {
 	return NewClient(apiURL).Status(ctx, cid)
 }
 
-func AddFile(ctx context.Context, url, path string) (AddResponse, error) {
+func AddFile(ctx context.Context, apiURL, path string) (AddResponse, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return AddResponse{}, fmt.Errorf("failed to open file %q: %v", path, err)
 	}
 	defer f.Close()
-	return NewClient(url).Add(ctx, f)
+	return NewClient(apiURL).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) (common.Hash, *types.Receipt, error) {
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) (common.Hash, *types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
 		return common.Hash{}, nil, fmt.Errorf("invalid cid %q: %v", ci, err)
@@ -79,7 +90,7 @@ func Pin(ctx context.Context, url string, contract common.Address, pk *ecdsa.Pri
 	if cid.Version() == 0 {
 		return common.Hash{}, nil, errors.New("version 0 CID not supported")
 	}
-	gc, err := goclient.Dial(url)
+	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
 		return common.Hash{}, nil, err
 	}
@@ -127,4 +138,68 @@ func WaitForReceipt(ctx context.Context, client *goclient.Client, hash common.Ha
 		case <-time.After(2 * time.Second):
 		}
 	}
+}
+
+type EventFilter struct {
+	// Hash for single block to match. From and To must be nil.
+	Hash *common.Hash
+
+	// Block number range.
+	From *big.Int
+	To   *big.Int
+
+	User *common.Address //TODO slice?
+	CID  string          //TODO slice? cid.CID here?
+}
+
+// Events returns Pinned events for the given EventFilter.
+func Events(ctx context.Context, rpcURL string, contract common.Address, filter EventFilter) ([]*PinnerPinned, error) {
+	gc, err := goclient.Dial(rpcURL)
+	if err != nil {
+		return nil, err
+	}
+	var q gochain.FilterQuery
+	q.Addresses = []common.Address{contract}
+	if filter.Hash != nil {
+		if filter.From != nil || filter.To != nil {
+			return nil, fmt.Errorf("cannot filter on both hash and from/to")
+		}
+		q.BlockHash = filter.Hash
+	} else {
+		q.FromBlock = filter.From
+		q.ToBlock = filter.To
+	}
+	var userTopic []common.Hash
+	if filter.User != nil {
+		userTopic = []common.Hash{filter.User.Hash()}
+
+	}
+	var cidTopic []common.Hash
+	if filter.CID != "" {
+		ci, err := cid.Parse(filter.CID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cid %q: %v", filter.CID, err)
+		}
+		if ci.Version() == 0 {
+			return nil, errors.New("version 0 CID not supported")
+		}
+		cidTopic = []common.Hash{crypto.Keccak256Hash(ci.Bytes())}
+	}
+	q.Topics = [][]common.Hash{{pinnerABI.Events["Pinned"].Id()}, userTopic, cidTopic}
+	logs, err := gc.FilterLogs(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+
+	bc := bind.NewBoundContract(contract, pinnerABI, nil, nil, nil)
+	pinned := make([]*PinnerPinned, len(logs))
+	for i, l := range logs {
+		var event PinnerPinned
+		if err := bc.UnpackLog(&event, "Pinned", l); err != nil {
+			return nil, err
+		}
+		pinned[i] = &event
+	}
+
+	return pinned, nil
 }
