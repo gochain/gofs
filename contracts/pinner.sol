@@ -9,7 +9,7 @@ interface Pinner {
 
     function pin(bytes calldata cid, uint gbh) external payable returns (bool);
 
-    event Pinned(address indexed user, bytes indexed cidIdx, bytes cid, uint gbh);
+    event Pinned(address indexed user, bytes indexed cid);
 }
 
 
@@ -33,6 +33,7 @@ contract owned {
     }
 }
 
+//TODO killable, and then refund full amount when dead?
 contract GOFSPinner is Pinner, owned {
     // Rate in wei per GigaByteHour.
     uint public rate;
@@ -61,6 +62,6 @@ contract GOFSPinner is Pinner, owned {
         );
         // refund excess
         msg.sender.transfer(msg.value - cost);
-        emit Pinned(msg.sender, cid, cid, gbh);
+        emit Pinned(msg.sender, cid);
     }
 }

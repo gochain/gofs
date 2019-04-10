@@ -90,18 +90,8 @@
       },
       {
         "indexed": true,
-        "name": "cidIdx",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
         "name": "cid",
         "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "name": "gbh",
-        "type": "uint256"
       }
     ],
     "name": "Pinned",

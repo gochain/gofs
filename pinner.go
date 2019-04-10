@@ -28,7 +28,7 @@ var (
 )
 
 // PinnerABI is the input ABI used to generate the binding from.
-const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"},{\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cidIdx\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
+const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"},{\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
 
 // PinnerBin is the compiled bytecode used for deploying new contracts.
 const PinnerBin = `0x`
@@ -330,49 +330,47 @@ func (it *PinnerPinnedIterator) Close() error {
 
 // PinnerPinned represents a Pinned event raised by the Pinner contract.
 type PinnerPinned struct {
-	User   common.Address
-	CidIdx common.Hash
-	Cid    []byte
-	Gbh    *big.Int
-	Raw    types.Log // Blockchain specific contextual infos
+	User common.Address
+	Cid  common.Hash
+	Raw  types.Log // Blockchain specific contextual infos
 }
 
-// FilterPinned is a free log retrieval operation binding the contract event 0x4d6efb9bd2f38e3cafaf5d932ce16579df65d7653204e2cb666e874edaafb68e.
+// FilterPinned is a free log retrieval operation binding the contract event 0x6f488ce79215cfcbd7d03c6e0cf105b3d9ee23884121bebe21744e7a38fc13b2.
 //
-// Solidity: event Pinned(address indexed user, bytes indexed cidIdx, bytes cid, uint256 gbh)
-func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, user []common.Address, cidIdx [][]byte) (*PinnerPinnedIterator, error) {
+// Solidity: event Pinned(address indexed user, bytes indexed cid)
+func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, user []common.Address, cid [][]byte) (*PinnerPinnedIterator, error) {
 
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
 	}
-	var cidIdxRule []interface{}
-	for _, cidIdxItem := range cidIdx {
-		cidIdxRule = append(cidIdxRule, cidIdxItem)
+	var cidRule []interface{}
+	for _, cidItem := range cid {
+		cidRule = append(cidRule, cidItem)
 	}
 
-	logs, sub, err := _Pinner.contract.FilterLogs(opts, "Pinned", userRule, cidIdxRule)
+	logs, sub, err := _Pinner.contract.FilterLogs(opts, "Pinned", userRule, cidRule)
 	if err != nil {
 		return nil, err
 	}
 	return &PinnerPinnedIterator{contract: _Pinner.contract, event: "Pinned", logs: logs, sub: sub}, nil
 }
 
-// WatchPinned is a free log subscription operation binding the contract event 0x4d6efb9bd2f38e3cafaf5d932ce16579df65d7653204e2cb666e874edaafb68e.
+// WatchPinned is a free log subscription operation binding the contract event 0x6f488ce79215cfcbd7d03c6e0cf105b3d9ee23884121bebe21744e7a38fc13b2.
 //
-// Solidity: event Pinned(address indexed user, bytes indexed cidIdx, bytes cid, uint256 gbh)
-func (_Pinner *PinnerFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *PinnerPinned, user []common.Address, cidIdx [][]byte) (event.Subscription, error) {
+// Solidity: event Pinned(address indexed user, bytes indexed cid)
+func (_Pinner *PinnerFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *PinnerPinned, user []common.Address, cid [][]byte) (event.Subscription, error) {
 
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
 	}
-	var cidIdxRule []interface{}
-	for _, cidIdxItem := range cidIdx {
-		cidIdxRule = append(cidIdxRule, cidIdxItem)
+	var cidRule []interface{}
+	for _, cidItem := range cid {
+		cidRule = append(cidRule, cidItem)
 	}
 
-	logs, sub, err := _Pinner.contract.WatchLogs(opts, "Pinned", userRule, cidIdxRule)
+	logs, sub, err := _Pinner.contract.WatchLogs(opts, "Pinned", userRule, cidRule)
 	if err != nil {
 		return nil, err
 	}

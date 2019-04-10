@@ -10,18 +10,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gochain-io/gochain/v3/accounts/abi"
-
 	"github.com/gochain-io/gochain/v3"
+	"github.com/gochain-io/gochain/v3/accounts/abi"
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
 	"github.com/gochain-io/gochain/v3/common"
+	"github.com/gochain-io/gochain/v3/common/hexutil"
 	"github.com/gochain-io/gochain/v3/core/types"
 	"github.com/gochain-io/gochain/v3/crypto"
 	"github.com/gochain-io/gochain/v3/goclient"
 	cid "github.com/ipfs/go-cid"
 )
 
-var pinnerABI abi.ABI
+var (
+	pinnerABI abi.ABI
+	pinInputs abi.Arguments
+)
 
 func init() {
 	parsed, err := abi.JSON(strings.NewReader(PinnerABI))
@@ -29,6 +32,7 @@ func init() {
 		panic(fmt.Sprintf("failed to parse generated abi: %v", err))
 	}
 	pinnerABI = parsed
+	pinInputs = pinnerABI.Methods["pin"].Inputs
 }
 
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
@@ -148,12 +152,33 @@ type EventFilter struct {
 	From *big.Int
 	To   *big.Int
 
-	User *common.Address //TODO slice?
-	CID  string          //TODO slice? cid.CID here?
+	Users []common.Address
+	CIDs  []cid.Cid
 }
 
-// Events returns Pinned events for the given EventFilter.
-func Events(ctx context.Context, rpcURL string, contract common.Address, filter EventFilter) ([]*PinnerPinned, error) {
+type PinInputs struct {
+	CID []byte
+	GBH *big.Int
+}
+
+func UnpackPinInputs(data []byte) (pi PinInputs, err error) {
+	err = pinInputs.Unpack(&pinInputs, data)
+	return
+}
+
+type PinReceipt struct {
+	User    common.Address
+	CID     cid.Cid
+	GBH     *big.Int
+	Tx      *types.Transaction
+	BlNum   uint64
+	TxNum   uint
+	LogNum  uint
+	Removed bool
+}
+
+// Pins returns Pinned events for the given EventFilter.
+func Pins(ctx context.Context, rpcURL string, contract common.Address, filter EventFilter) ([]PinReceipt, error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
@@ -170,20 +195,22 @@ func Events(ctx context.Context, rpcURL string, contract common.Address, filter 
 		q.ToBlock = filter.To
 	}
 	var userTopic []common.Hash
-	if filter.User != nil {
-		userTopic = []common.Hash{filter.User.Hash()}
+	if len(filter.Users) > 0 {
+		userTopic = make([]common.Hash, len(filter.Users))
+		for i := range filter.Users {
+			userTopic[i] = filter.Users[i].Hash()
+		}
 
 	}
 	var cidTopic []common.Hash
-	if filter.CID != "" {
-		ci, err := cid.Parse(filter.CID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid cid %q: %v", filter.CID, err)
+	if len(filter.CIDs) > 0 {
+		cidTopic = make([]common.Hash, len(filter.CIDs))
+		for i, ci := range filter.CIDs {
+			if ci.Version() == 0 {
+				return nil, errors.New("version 0 CID not supported")
+			}
+			cidTopic[i] = crypto.Keccak256Hash(ci.Bytes())
 		}
-		if ci.Version() == 0 {
-			return nil, errors.New("version 0 CID not supported")
-		}
-		cidTopic = []common.Hash{crypto.Keccak256Hash(ci.Bytes())}
 	}
 	q.Topics = [][]common.Hash{{pinnerABI.Events["Pinned"].Id()}, userTopic, cidTopic}
 	logs, err := gc.FilterLogs(ctx, q)
@@ -192,14 +219,39 @@ func Events(ctx context.Context, rpcURL string, contract common.Address, filter 
 	}
 
 	bc := bind.NewBoundContract(contract, pinnerABI, nil, nil, nil)
-	pinned := make([]*PinnerPinned, len(logs))
-	for i, l := range logs {
+	var pins []PinReceipt
+	for _, l := range logs {
 		var event PinnerPinned
 		if err := bc.UnpackLog(&event, "Pinned", l); err != nil {
 			return nil, err
 		}
-		pinned[i] = &event
+		tx, _, err := gc.TransactionByHash(ctx, l.TxHash)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get tx %s: %v", l.TxHash, err)
+		}
+		from, err := gc.TransactionSender(ctx, tx, l.BlockHash, 0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to look up tx sender %s: %v", l.TxHash, err)
+		}
+		pi, err := UnpackPinInputs(tx.Data())
+		if err != nil {
+			return nil, fmt.Errorf("failed to unpack pin inputs %s: %v", hexutil.Encode(tx.Data()), err)
+		}
+		ci, err := cid.Parse(pi.CID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse CID %s: %v", hexutil.Encode(pi.CID), err)
+		}
+		pins = append(pins, PinReceipt{
+			User:    from,
+			CID:     ci,
+			GBH:     pi.GBH,
+			Tx:      tx,
+			BlNum:   l.BlockNumber,
+			TxNum:   l.TxIndex,
+			LogNum:  l.Index,
+			Removed: l.Removed,
+		})
 	}
 
-	return pinned, nil
+	return pins, nil
 }

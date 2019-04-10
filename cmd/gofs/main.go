@@ -14,7 +14,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/gochain-io/gochain/v3/common/hexutil"
+	cid "github.com/ipfs/go-cid"
 
 	"github.com/gochain-io/gofs"
 
@@ -22,7 +22,6 @@ import (
 	"github.com/gochain-io/gochain/v3/core/types"
 	"github.com/gochain-io/gochain/v3/crypto"
 	"github.com/gochain-io/web3"
-	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli"
 )
 
@@ -175,8 +174,8 @@ func main() {
 			},
 		},
 		{
-			Name:  "events",
-			Usage: "Get Pinned events from filtered logs.",
+			Name:  "pins",
+			Usage: "Query for pins.",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "hash",
@@ -191,12 +190,12 @@ func main() {
 					Usage: "Ending block number.",
 				},
 				cli.StringFlag{
-					Name:  "cid",
-					Usage: "CID to filter on.",
+					Name:  "cids",
+					Usage: "Comma separated CIDs to filter on.",
 				},
 				cli.StringFlag{
-					Name:  "user",
-					Usage: "User to filter on.",
+					Name:  "users",
+					Usage: "Comma separated users to filter on.",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -222,16 +221,27 @@ func main() {
 				if c.IsSet("to") {
 					f.To = big.NewInt(c.Int64("to"))
 				}
-				f.CID = c.String("cid")
-				if c.IsSet("user") {
-					if a, err := parseAddress(c.String("user")); err != nil {
-						return fmt.Errorf("invalid user: %v", err)
-					} else {
-						f.User = &a
+				if c.IsSet("cids") {
+					for _, s := range c.StringSlice("cids") {
+						ci, err := cid.Parse(s)
+						if err != nil {
+							return fmt.Errorf("invalid cid %s: %v", s, err)
+						}
+						f.CIDs = append(f.CIDs, ci)
+					}
+
+				}
+				if c.IsSet("users") {
+					for _, s := range c.StringSlice("user") {
+						a, err := parseAddress(s)
+						if err != nil {
+							return fmt.Errorf("invalid user: %v", err)
+						}
+						f.Users = append(f.Users, a)
 					}
 				}
 
-				return Events(ctx, rpc, contract, f)
+				return Pins(ctx, rpc, contract, f)
 			},
 		},
 	}
@@ -338,26 +348,23 @@ func Status(ctx context.Context, apiURL, ci string) error {
 	return nil
 }
 
-func Events(ctx context.Context, rpcURL string, contract common.Address, f gofs.EventFilter) error {
-	events, err := gofs.Events(ctx, rpcURL, contract, f)
+func Pins(ctx context.Context, rpcURL string, contract common.Address, f gofs.EventFilter) error {
+	pins, err := gofs.Pins(ctx, rpcURL, contract, f)
 	if err != nil {
 		return err
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tGBH\t")
-	for _, e := range events {
-		ci, err := cid.Parse(e.Cid)
-		if err != nil {
-			return fmt.Errorf("invalid cid %s: %v", hexutil.Encode(e.Cid), err)
-		}
+	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tGBH\tUser\t")
+	for _, p := range pins {
 		fmt.Fprintf(w,
-			"%d\t%d\t%d\t%t\t%s\t%d\t\n",
-			e.Raw.BlockNumber, //TODO why are all these idxs 0?
-			e.Raw.TxIndex,
-			e.Raw.Index,
-			e.Raw.Removed,
-			ci.String(),
-			e.Gbh,
+			"%d\t%d\t%d\t%t\t%s\t%s\t%s\t\n",
+			p.BlNum,
+			p.TxNum,
+			p.LogNum,
+			p.Removed,
+			p.CID.String(),
+			p.GBH,
+			p.User.Hex(),
 		)
 	}
 	w.Flush()
