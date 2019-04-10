@@ -1,6 +1,7 @@
 package gofs
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"errors"
@@ -23,7 +24,7 @@ import (
 
 var (
 	pinnerABI abi.ABI
-	pinInputs abi.Arguments
+	pinMethod abi.Method
 )
 
 func init() {
@@ -32,7 +33,7 @@ func init() {
 		panic(fmt.Sprintf("failed to parse generated abi: %v", err))
 	}
 	pinnerABI = parsed
-	pinInputs = pinnerABI.Methods["pin"].Inputs
+	pinMethod = pinnerABI.Methods["pin"]
 }
 
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
@@ -157,12 +158,15 @@ type EventFilter struct {
 }
 
 type PinInputs struct {
-	CID []byte
-	GBH *big.Int
+	CID []byte   `abi:"cid"`
+	GBH *big.Int `abi:"gbh"`
 }
 
+// UnpackPinInputs returns arguments from a pin call.
+// Handles full tx data, or plain inputs.
 func UnpackPinInputs(data []byte) (pi PinInputs, err error) {
-	err = pinInputs.Unpack(&pinInputs, data)
+	data = bytes.TrimPrefix(data, pinMethod.Id())
+	err = pinMethod.Inputs.Unpack(&pi, data)
 	return
 }
 

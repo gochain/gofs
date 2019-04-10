@@ -267,8 +267,8 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	case types.ReceiptStatusFailed:
 		return fmt.Errorf("tx %s failed", h.Hex())
 	case types.ReceiptStatusSuccessful:
-		fmt.Printf("Purchased %d GigaByte Hours of storage for %s.\n", dur, ci)
-		fmt.Printf(`https://testnet-explorer.gochain.io/tx/%s`, h.Hex())
+		fmt.Printf("Purchased %d GigaByteHours of storage for %s.\n", dur, ci)
+		fmt.Printf("https://testnet-explorer.gochain.io/tx/%s\n", h.Hex())
 		return nil
 	default:
 		return fmt.Errorf("tx %s unrecognized receipt status: %d", h.Hex(), r.Status)
