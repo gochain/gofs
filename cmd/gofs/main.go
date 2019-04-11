@@ -174,8 +174,8 @@ func main() {
 			},
 		},
 		{
-			Name:  "pins",
-			Usage: "Query for pins.",
+			Name:  "receipts",
+			Usage: "Query for receipts.",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "hash",
@@ -241,7 +241,7 @@ func main() {
 					}
 				}
 
-				return Pins(ctx, rpc, contract, f)
+				return Receipts(ctx, rpc, contract, f)
 			},
 		},
 	}
@@ -348,23 +348,23 @@ func Status(ctx context.Context, apiURL, ci string) error {
 	return nil
 }
 
-func Pins(ctx context.Context, rpcURL string, contract common.Address, f gofs.EventFilter) error {
-	pins, err := gofs.Pins(ctx, rpcURL, contract, f)
+func Receipts(ctx context.Context, rpcURL string, contract common.Address, f gofs.EventFilter) error {
+	receipts, err := gofs.Receipts(ctx, rpcURL, contract, f)
 	if err != nil {
 		return err
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
 	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tGBH\tUser\t")
-	for _, p := range pins {
+	for _, r := range receipts {
 		fmt.Fprintf(w,
 			"%d\t%d\t%d\t%t\t%s\t%s\t%s\t\n",
-			p.BlNum,
-			p.TxNum,
-			p.LogNum,
-			p.Removed,
-			p.CID.String(),
-			p.GBH,
-			p.User.Hex(),
+			r.BlNum,
+			r.TxNum,
+			r.LogNum,
+			r.Removed,
+			r.CID.String(),
+			r.GBH,
+			r.User.Hex(),
 		)
 	}
 	w.Flush()

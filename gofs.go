@@ -170,7 +170,7 @@ func UnpackPinInputs(data []byte) (pi PinInputs, err error) {
 	return
 }
 
-type PinReceipt struct {
+type Receipt struct {
 	User    common.Address
 	CID     cid.Cid
 	GBH     *big.Int
@@ -181,8 +181,8 @@ type PinReceipt struct {
 	Removed bool
 }
 
-// Pins returns Pinned events for the given EventFilter.
-func Pins(ctx context.Context, rpcURL string, contract common.Address, filter EventFilter) ([]PinReceipt, error) {
+// Receipts returns Pinned events for the given EventFilter.
+func Receipts(ctx context.Context, rpcURL string, contract common.Address, filter EventFilter) ([]Receipt, error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func Pins(ctx context.Context, rpcURL string, contract common.Address, filter Ev
 	}
 
 	bc := bind.NewBoundContract(contract, pinnerABI, nil, nil, nil)
-	var pins []PinReceipt
+	var receipts []Receipt
 	for _, l := range logs {
 		var event PinnerPinned
 		if err := bc.UnpackLog(&event, "Pinned", l); err != nil {
@@ -245,7 +245,7 @@ func Pins(ctx context.Context, rpcURL string, contract common.Address, filter Ev
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CID %s: %v", hexutil.Encode(pi.CID), err)
 		}
-		pins = append(pins, PinReceipt{
+		receipts = append(receipts, Receipt{
 			User:    from,
 			CID:     ci,
 			GBH:     pi.GBH,
@@ -257,5 +257,5 @@ func Pins(ctx context.Context, rpcURL string, contract common.Address, filter Ev
 		})
 	}
 
-	return pins, nil
+	return receipts, nil
 }
