@@ -21,18 +21,19 @@ var MainnetAddress = common.HexToAddress("0x1234") //TODO
 
 type API interface {
 	// Add puts new data and temporarily pins.
-	Add(context.Context, io.Reader) (AddResponse, error)
+	Add(context.Context, io.ReadCloser) (AddResponse, error)
 	// Status returns the status of a CID.
 	Status(ctx context.Context, ci cid.Cid) (StatusResponse, error)
 }
-
 type AddResponse struct {
 	CID        string    `json:"cid"`
-	Expiration time.Time `json:"expiration"` // Unix timestamp.
+	Expiration time.Time `json:"expiration"`
+	Size       int64     `json:"size"` // File size in bytes.
 }
 
 type StatusResponse struct {
-	Expiration time.Time `json:"expiration,omitempty"` // Unix timestamp.
+	Expiration time.Time `json:"expiration,omitempty"`
+	Size       int64     `json:"size"` // File size in bytes.
 }
 
 func NewClient(url string) API {
@@ -45,7 +46,7 @@ type client struct {
 	url string
 }
 
-func (c *client) Add(ctx context.Context, r io.Reader) (AddResponse, error) {
+func (c *client) Add(ctx context.Context, r io.ReadCloser) (AddResponse, error) {
 	req, err := http.NewRequest("PUT", c.url+"add", r)
 	if err != nil {
 		return AddResponse{}, err

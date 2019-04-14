@@ -3,6 +3,7 @@ module github.com/gochain-io/gofs
 go 1.12
 
 require (
+	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
 	github.com/aristanetworks/goarista v0.0.0-20190319235110-489128639c40 // indirect
 	github.com/gochain-io/gochain/v3 v3.1.14
 	github.com/gochain-io/web3 v0.0.36

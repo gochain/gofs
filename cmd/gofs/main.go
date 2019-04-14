@@ -14,6 +14,8 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/alecthomas/units"
+
 	cid "github.com/ipfs/go-cid"
 
 	"github.com/gochain-io/gofs"
@@ -282,6 +284,7 @@ func Add(ctx context.Context, apiURL, path string) error {
 	}
 	fmt.Println("File uploaded and pinned.")
 	fmt.Println("Pinned until:", ar.Expiration)
+	fmt.Println("File size:", units.Base2Bytes(ar.Size))
 	return nil
 }
 
@@ -297,6 +300,7 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, size, dur
 }
 
 func costStr(size uint64, dur uint64, cost *big.Int) string {
+	//TODO github.com/alecthomas/units
 	return fmt.Sprintf("%d GBs for %s: %s GO", size, time.Duration(dur)*time.Hour, web3.WeiAsBase(cost))
 }
 
@@ -339,12 +343,12 @@ func Status(ctx context.Context, apiURL, ci string) error {
 		fmt.Println("Never been pinned.")
 		return nil
 	}
+	fmt.Println("File size:", units.Base2Bytes(st.Size))
 	if until := time.Until(st.Expiration); until > 0 {
 		fmt.Printf("Expires in %s at %s.\n", until, st.Expiration)
 	} else {
 		fmt.Printf("Expired %s ago at %s.\n", -until, st.Expiration)
 	}
-
 	return nil
 }
 
