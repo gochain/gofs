@@ -55,6 +55,7 @@ contract GOFSPinner is Pinner, owned {
             !(cid[0] == 0x12 && cid[1] == 0x20),
             "Version 0 CID not allowed"
         );
+        //TODO require gbh > 0
         uint cost = gbh*rate;
         require(
             msg.value >= cost,

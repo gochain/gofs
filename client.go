@@ -66,7 +66,7 @@ func (c *client) Add(ctx context.Context, r io.ReadCloser) (AddResponse, error) 
 }
 
 func (c *client) Status(ctx context.Context, ci cid.Cid) (StatusResponse, error) {
-	resp, err := http.Get(c.url + "status")
+	resp, err := http.Get(c.url + "status/" + ci.String())
 	if err != nil {
 		return StatusResponse{}, err
 	}

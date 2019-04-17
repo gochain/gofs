@@ -44,7 +44,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Usage = "GoChain filesystem cli tool"
 	var api, rpc, contract string
-	var recursive bool
+	//TODO var recursive bool
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "url",
@@ -150,11 +150,12 @@ func main() {
 			Name:  "add",
 			Usage: "Add and pin a file.",
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:        "recursive, r",
-					Usage:       "Add directory recursively",
-					Destination: &recursive,
-				},
+				//TODO
+				//cli.BoolFlag{
+				//	Name:        "recursive, r",
+				//	Usage:       "Add directory recursively",
+				//	Destination: &recursive,
+				//},
 			},
 			Action: func(c *cli.Context) error {
 				path := c.Args().First()
