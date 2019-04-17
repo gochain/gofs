@@ -284,6 +284,7 @@ func Add(ctx context.Context, apiURL, path string) error {
 		return fmt.Errorf("failed to add file %q: %v", path, err)
 	}
 	fmt.Println("File uploaded and pinned.")
+	fmt.Println("CID:", ar.CID)
 	fmt.Println("Pinned until:", ar.Expiration)
 	fmt.Println("File size:", units.Base2Bytes(ar.Size))
 	return nil

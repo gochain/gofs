@@ -12,12 +12,13 @@ VERSION:
    0.0.1
 
 COMMANDS:
-     pin      Pin a CID
-     rate     Get the current storage rate in wei per GigaByteHour.
-     cost     Get the current storage cost in wei for the given GigaByteHour.
-     add      Add and pin a file.
-     status   Get the current storage cost in wei per GigaByteHour.
-     help, h  Shows a list of commands or help for one command
+     pin       Pin a CID
+     rate      Get the current storage rate in wei per GigaByteHour.
+     cost      Get the current storage cost in wei for the given size and duration.
+     add       Add and pin a file.
+     status    Get the current storage status for a CID.
+     receipts  Query for receipts.
+     help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --url value       GOFS API URL. (default: "https://gofs.io/api/v0/") [$GOFS_API]
