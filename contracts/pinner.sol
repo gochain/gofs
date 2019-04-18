@@ -7,6 +7,7 @@ interface Pinner {
     // Returns the number of the block when this contract was deployed.
     function deployed() external view returns (uint);
 
+    // Pin a CID. gbh must be greater than 0. CID must not be version 0.
     function pin(bytes calldata cid, uint gbh) external payable returns (bool);
 
     event Pinned(address indexed user, bytes indexed cid);
@@ -53,9 +54,12 @@ contract GOFSPinner is Pinner, owned {
     function pin(bytes memory cid, uint gbh) public payable returns (bool) {
         require(
             !(cid[0] == 0x12 && cid[1] == 0x20),
-            "Version 0 CID not allowed"
+            "Version 0 CID not allowed."
         );
-        //TODO require gbh > 0
+        require(
+            gbh > 0,
+            "Cannot purchase 0 storage."
+        );
         uint cost = gbh*rate;
         require(
             msg.value >= cost,
