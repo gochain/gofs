@@ -124,26 +124,30 @@ func main() {
 					Usage: "Storage duration in hours.",
 					Value: 1,
 				},
-				cli.Uint64Flag{
+				cli.StringFlag{
 					Name:  "size, s",
-					Usage: "Storage Size in GigaBytes.",
-					Value: 1,
+					Usage: "Storage size.",
+					Value: units.GiB.String(),
 				},
 			},
 			Action: func(c *cli.Context) error {
-				dur := c.Uint64("duration")
+				dur := c.Int64("duration")
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
 				}
-				size := c.Uint64("size")
+				sizeStr := c.String("size")
+				size, err := units.ParseBase2Bytes(sizeStr)
+				if err != nil {
+					return fmt.Errorf("invalid size %q: %v", sizeStr, err)
+				}
 				if size == 0 {
-					return fmt.Errorf("size missing or invalid")
+					return fmt.Errorf("size must be greater than 0")
 				}
 				contract, err := parseAddress(contract)
 				if err != nil {
 					return fmt.Errorf("invalid contract: %v", err)
 				}
-				return Cost(ctx, rpc, contract, size, dur)
+				return Cost(ctx, rpc, contract, int64(size), dur)
 			},
 		},
 		{
@@ -290,20 +294,45 @@ func Add(ctx context.Context, apiURL, path string) error {
 	return nil
 }
 
-func Cost(ctx context.Context, rpcURL string, contract common.Address, size, dur uint64) error {
-	_, cost, err := gofs.Cost(ctx, rpcURL, contract, size, dur)
+func Cost(ctx context.Context, rpcURL string, contract common.Address, size, hrs int64) error {
+	_, cost, err := gofs.Cost(ctx, rpcURL, contract, size, hrs)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(costStr(size, dur, cost))
+	fmt.Println(costStr(size, hrs, cost))
 
 	return nil
 }
 
-func costStr(size uint64, dur uint64, cost *big.Int) string {
-	//TODO github.com/alecthomas/units
-	return fmt.Sprintf("%d GBs for %s: %s GO", size, time.Duration(dur)*time.Hour, web3.WeiAsBase(cost))
+func costStr(bytes int64, hrs int64, cost *big.Int) string {
+	return fmt.Sprintf("%s for %s: %s GO", units.Base2Bytes(bytes), prettyHours(hrs), web3.WeiAsBase(cost))
+}
+
+func prettyHours(hours int64) string {
+	days := hours / 24
+	hours -= days * 24
+
+	weeks := days / 7
+	days -= weeks * 7
+
+	years := weeks / 52
+	weeks -= years * 52
+
+	var s strings.Builder
+	if years > 0 {
+		fmt.Fprintf(&s, "%dy", years)
+	}
+	if weeks > 0 {
+		fmt.Fprintf(&s, "%dw", weeks)
+	}
+	if days > 0 {
+		fmt.Fprintf(&s, "%dd", days)
+	}
+	if hours > 0 {
+		fmt.Fprintf(&s, "%dh", hours)
+	}
+	return s.String()
 }
 
 func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
@@ -312,26 +341,26 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 		return err
 	}
 	//TODO friendlier units?
-	fmt.Printf("Current storage rate: %d wei per GigaByteHour.\n\n", rate)
+	fmt.Printf("Current storage rate: %d wei per GBHour.\n\n", rate)
 
 	fmt.Println("Cost:")
 	for _, vals := range []struct {
-		gbs uint64
-		hrs uint64
+		bytes units.Base2Bytes
+		hrs   int64
 	}{
-		{gbs: 1, hrs: 1},
-		{gbs: 10, hrs: 1},
-		{gbs: 1000, hrs: 1},
-		{gbs: 1, hrs: 24},
-		{gbs: 1, hrs: 24 * 7},
-		{gbs: 1, hrs: 24 * 7 * 52},
-		{gbs: 10, hrs: 24 * 7 * 52},
-		{gbs: 1000, hrs: 24 * 7 * 52},
+		{bytes: units.GiB, hrs: 1},
+		{bytes: 10 * units.GiB, hrs: 1},
+		{bytes: units.TiB, hrs: 1},
+		{bytes: units.GiB, hrs: 24},
+		{bytes: units.GiB, hrs: 24 * 7},
+		{bytes: units.GiB, hrs: 24 * 7 * 52},
+		{bytes: 10 * units.GiB, hrs: 24 * 7 * 52},
+		{bytes: units.Tebibyte, hrs: 24 * 7 * 52},
 	} {
-		gbh := big.NewInt(int64(vals.gbs * vals.hrs))
+		gbh := big.NewInt(int64(vals.bytes) * vals.hrs)
 		cost := new(big.Int).Mul(gbh, rate)
 
-		fmt.Println("\t", costStr(vals.gbs, vals.hrs, cost))
+		fmt.Println("\t", costStr(int64(vals.bytes), vals.hrs, cost))
 	}
 	return nil
 }

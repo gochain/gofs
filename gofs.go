@@ -48,8 +48,8 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int
 	return p.Rate(&bind.CallOpts{Context: ctx})
 }
 
-// Cost calculates the storage cost of size GigaBytes for dur hours at the current rate.
-func Cost(ctx context.Context, rpcURL string, contract common.Address, size, dur uint64) (rate *big.Int, cost *big.Int, err error) {
+// Cost calculates the storage cost at the current rate.
+func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hrs int64) (rate *big.Int, cost *big.Int, err error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
 		return
@@ -62,7 +62,7 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, size, dur
 	if err != nil {
 		return
 	}
-	gbhs := size * dur
+	gbhs := bytes * hrs
 	cost = new(big.Int).Mul(rate, big.NewInt(int64(gbhs)))
 	return
 }
