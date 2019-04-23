@@ -15,17 +15,22 @@ import (
 	"time"
 
 	"github.com/alecthomas/units"
-
-	cid "github.com/ipfs/go-cid"
-
-	"github.com/gochain-io/gofs"
-
 	"github.com/gochain-io/gochain/v3/common"
 	"github.com/gochain-io/gochain/v3/core/types"
 	"github.com/gochain-io/gochain/v3/crypto"
+	"github.com/gochain-io/gofs"
 	"github.com/gochain-io/web3"
+	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli"
 )
+
+var version string
+
+func init() {
+	if version == "" {
+		version = "unknown"
+	}
+}
 
 func main() {
 	// Interrupt cancellation.
@@ -41,7 +46,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "gofs"
-	app.Version = "0.0.1"
+	app.Version = version
 	app.Usage = "GoChain filesystem cli tool"
 	var api, rpc, contract string
 	//TODO var recursive bool
