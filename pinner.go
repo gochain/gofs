@@ -28,7 +28,7 @@ var (
 )
 
 // PinnerABI is the input ABI used to generate the binding from.
-const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"},{\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
+const PinnerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"pin\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"gbh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"}]"
 
 // PinnerBin is the compiled bytecode used for deploying new contracts.
 const PinnerBin = `0x`
@@ -240,25 +240,25 @@ func (_Pinner *PinnerCallerSession) Rate() (*big.Int, error) {
 	return _Pinner.Contract.Rate(&_Pinner.CallOpts)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x93b862fe.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid, uint256 gbh) returns(bool)
-func (_Pinner *PinnerTransactor) Pin(opts *bind.TransactOpts, cid []byte, gbh *big.Int) (*types.Transaction, error) {
-	return _Pinner.contract.Transact(opts, "pin", cid, gbh)
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerTransactor) Pin(opts *bind.TransactOpts, cid []byte) (*types.Transaction, error) {
+	return _Pinner.contract.Transact(opts, "pin", cid)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x93b862fe.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid, uint256 gbh) returns(bool)
-func (_Pinner *PinnerSession) Pin(cid []byte, gbh *big.Int) (*types.Transaction, error) {
-	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid, gbh)
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerSession) Pin(cid []byte) (*types.Transaction, error) {
+	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid)
 }
 
-// Pin is a paid mutator transaction binding the contract method 0x93b862fe.
+// Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid, uint256 gbh) returns(bool)
-func (_Pinner *PinnerTransactorSession) Pin(cid []byte, gbh *big.Int) (*types.Transaction, error) {
-	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid, gbh)
+// Solidity: function pin(bytes cid) returns(bool)
+func (_Pinner *PinnerTransactorSession) Pin(cid []byte) (*types.Transaction, error) {
+	return _Pinner.Contract.Pin(&_Pinner.TransactOpts, cid)
 }
 
 // PinnerPinnedIterator is returned from FilterPinned and is used to iterate over the raw logs and unpacked data for Pinned events raised by the Pinner contract.
@@ -332,12 +332,13 @@ func (it *PinnerPinnedIterator) Close() error {
 type PinnerPinned struct {
 	User common.Address
 	Cid  common.Hash
+	Gbh  *big.Int
 	Raw  types.Log // Blockchain specific contextual infos
 }
 
-// FilterPinned is a free log retrieval operation binding the contract event 0x6f488ce79215cfcbd7d03c6e0cf105b3d9ee23884121bebe21744e7a38fc13b2.
+// FilterPinned is a free log retrieval operation binding the contract event 0x7c80eb99758dfe3e8aef5df583c1c9bab5369cf46b930b802f130edcfeac90ca.
 //
-// Solidity: event Pinned(address indexed user, bytes indexed cid)
+// Solidity: event Pinned(address indexed user, bytes indexed cid, uint256 gbh)
 func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, user []common.Address, cid [][]byte) (*PinnerPinnedIterator, error) {
 
 	var userRule []interface{}
@@ -356,9 +357,9 @@ func (_Pinner *PinnerFilterer) FilterPinned(opts *bind.FilterOpts, user []common
 	return &PinnerPinnedIterator{contract: _Pinner.contract, event: "Pinned", logs: logs, sub: sub}, nil
 }
 
-// WatchPinned is a free log subscription operation binding the contract event 0x6f488ce79215cfcbd7d03c6e0cf105b3d9ee23884121bebe21744e7a38fc13b2.
+// WatchPinned is a free log subscription operation binding the contract event 0x7c80eb99758dfe3e8aef5df583c1c9bab5369cf46b930b802f130edcfeac90ca.
 //
-// Solidity: event Pinned(address indexed user, bytes indexed cid)
+// Solidity: event Pinned(address indexed user, bytes indexed cid, uint256 gbh)
 func (_Pinner *PinnerFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *PinnerPinned, user []common.Address, cid [][]byte) (event.Subscription, error) {
 
 	var userRule []interface{}

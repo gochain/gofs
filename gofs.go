@@ -117,7 +117,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 		GasLimit: 50000,
 		Value:    cost,
 	}
-	tx, err := p.Pin(opts, cid.Bytes(), big.NewInt(int64(dur)))
+	tx, err := p.Pin(opts, cid.Bytes())
 	if err != nil {
 		return common.Hash{}, nil, fmt.Errorf("failed to pin %q: %v", cid, err)
 	}
@@ -158,8 +158,7 @@ type EventFilter struct {
 }
 
 type PinInputs struct {
-	CID []byte   `abi:"cid"`
-	GBH *big.Int `abi:"gbh"`
+	CID []byte `abi:"cid"`
 }
 
 // UnpackPinInputs returns arguments from a pin call.
@@ -248,7 +247,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 		receipts = append(receipts, Receipt{
 			User:    from,
 			CID:     ci,
-			GBH:     pi.GBH,
+			GBH:     event.Gbh,
 			Tx:      tx,
 			BlNum:   l.BlockNumber,
 			TxNum:   l.TxIndex,

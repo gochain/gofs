@@ -19,10 +19,6 @@
       {
         "name": "cid",
         "type": "bytes"
-      },
-      {
-        "name": "gbh",
-        "type": "uint256"
       }
     ],
     "name": "pin",
@@ -62,6 +58,11 @@
         "indexed": true,
         "name": "cid",
         "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "name": "gbh",
+        "type": "uint256"
       }
     ],
     "name": "Pinned",

@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
 	github.com/aristanetworks/goarista v0.0.0-20190319235110-489128639c40 // indirect
 	github.com/gochain-io/gochain/v3 v3.1.14
-	github.com/gochain-io/web3 v0.0.36
+	github.com/gochain-io/web3 v0.1.2
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/ipfs/go-cid v0.0.1
 	github.com/pborman/uuid v1.2.0 // indirect
