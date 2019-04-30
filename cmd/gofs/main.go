@@ -79,8 +79,8 @@ func main() {
 			Usage: "Pin a CID",
 			Flags: []cli.Flag{
 				cli.Uint64Flag{
-					Name:  "duration, d",
-					Usage: "Storage duration in hours.",
+					Name:  "gbh",
+					Usage: "Storage to purchase in GigaByteHours.",
 				},
 				cli.StringFlag{
 					Name:   "private-key, pk",
@@ -93,9 +93,9 @@ func main() {
 				if cid == "" {
 					return errors.New("missing CID")
 				}
-				dur := c.Uint64("duration")
-				if dur == 0 {
-					return fmt.Errorf("duration missing or invalid")
+				gbh := c.Uint64("gbh")
+				if gbh == 0 {
+					return fmt.Errorf("gbh missing or invalid")
 				}
 				contract, err := parseAddress(contract)
 				if err != nil {
@@ -106,7 +106,7 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("invalid private key %q: %v", pkStr, err)
 				}
-				return Pin(ctx, rpc, contract, pk, cid, dur)
+				return Pin(ctx, rpc, contract, pk, cid, gbh)
 			},
 		},
 		{
@@ -141,18 +141,18 @@ func main() {
 					return fmt.Errorf("duration missing or invalid")
 				}
 				sizeStr := c.String("size")
-				size, err := units.ParseBase2Bytes(sizeStr)
+				bytes, err := units.ParseBase2Bytes(sizeStr)
 				if err != nil {
 					return fmt.Errorf("invalid size %q: %v", sizeStr, err)
 				}
-				if size == 0 {
+				if bytes == 0 {
 					return fmt.Errorf("size must be greater than 0")
 				}
 				contract, err := parseAddress(contract)
 				if err != nil {
 					return fmt.Errorf("invalid contract: %v", err)
 				}
-				return Cost(ctx, rpc, contract, int64(size), dur)
+				return Cost(ctx, rpc, contract, int64(bytes), dur)
 			},
 		},
 		{
@@ -270,8 +270,8 @@ func parseAddress(addr string) (common.Address, error) {
 	return common.HexToAddress(addr), nil
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) error {
-	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, dur)
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, gbh uint64) error {
+	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, gbh)
 	if err != nil {
 		return fmt.Errorf("failed to pin: %v", err)
 	}
@@ -279,7 +279,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	case types.ReceiptStatusFailed:
 		return fmt.Errorf("tx %s failed", h.Hex())
 	case types.ReceiptStatusSuccessful:
-		fmt.Printf("Purchased %d GigaByteHours of storage for %s.\n", dur, ci)
+		fmt.Printf("Purchased %d GigaByteHours of storage for %s.\n", gbh, ci)
 		fmt.Printf("https://testnet-explorer.gochain.io/tx/%s\n", h.Hex())
 		return nil
 	default:
@@ -299,13 +299,13 @@ func Add(ctx context.Context, apiURL, path string) error {
 	return nil
 }
 
-func Cost(ctx context.Context, rpcURL string, contract common.Address, size, hrs int64) error {
-	_, cost, err := gofs.Cost(ctx, rpcURL, contract, size, hrs)
+func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hrs int64) error {
+	_, cost, err := gofs.Cost(ctx, rpcURL, contract, bytes, hrs)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(costStr(size, hrs, cost))
+	fmt.Println(costStr(bytes, hrs, cost))
 
 	return nil
 }
@@ -362,8 +362,7 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 		{bytes: 10 * units.GiB, hrs: 24 * 7 * 52},
 		{bytes: units.Tebibyte, hrs: 24 * 7 * 52},
 	} {
-		gbh := big.NewInt(int64(vals.bytes) * vals.hrs)
-		cost := new(big.Int).Mul(gbh, rate)
+		cost := gofs.ComputeCost(rate, int64(vals.bytes), vals.hrs)
 
 		fmt.Println("\t", costStr(int64(vals.bytes), vals.hrs, cost))
 	}

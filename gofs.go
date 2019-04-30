@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/units"
 	"github.com/gochain-io/gochain/v3"
 	"github.com/gochain-io/gochain/v3/accounts/abi"
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
@@ -48,6 +49,14 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int
 	return p.Rate(&bind.CallOpts{Context: ctx})
 }
 
+func ComputeCost(rate *big.Int, bytes, hrs int64) *big.Int {
+	gbh := big.NewRat(bytes*hrs, int64(units.GiB))
+	rat := new(big.Rat).Mul(gbh, new(big.Rat).SetInt(rate))
+	// This is gross but there doesn't appear to be a way to go from big.Rat to big.Int directly, and we need the Rat precision.
+	c, _ := new(big.Int).SetString(rat.FloatString(0), 10)
+	return c
+}
+
 // Cost calculates the storage cost at the current rate.
 func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hrs int64) (rate *big.Int, cost *big.Int, err error) {
 	gc, err := goclient.Dial(rpcURL)
@@ -62,8 +71,7 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hr
 	if err != nil {
 		return
 	}
-	gbhs := bytes * hrs
-	cost = new(big.Int).Mul(rate, big.NewInt(int64(gbhs)))
+	cost = ComputeCost(rate, bytes, hrs)
 	return
 }
 
@@ -87,7 +95,7 @@ func AddFile(ctx context.Context, apiURL, path string) (AddResponse, error) {
 	return NewClient(apiURL).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, dur uint64) (common.Hash, *types.Receipt, error) {
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, gbh uint64) (common.Hash, *types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
 		return common.Hash{}, nil, fmt.Errorf("invalid cid %q: %v", ci, err)
@@ -107,7 +115,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	if err != nil {
 		return common.Hash{}, nil, err
 	}
-	cost := new(big.Int).Mul(rate, big.NewInt(int64(dur)))
+	cost := new(big.Int).Mul(rate, big.NewInt(int64(gbh)))
 	opts := &bind.TransactOpts{
 		Context: ctx,
 		From:    crypto.PubkeyToAddress(pk.PublicKey),
