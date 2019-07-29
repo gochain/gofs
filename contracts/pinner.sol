@@ -1,7 +1,7 @@
 pragma solidity ^0.5.3;
 
 interface Pinner {
-    // Returns the current rate in wei per GigaByteHour.
+    // Returns the current rate in atto GO per ByteHour.
     function rate() external view returns (uint);
 
     // Returns the number of the block when this contract was deployed.
@@ -10,7 +10,7 @@ interface Pinner {
     // Pin a CID. Value must be greater than 0. CID must not be version 0.
     function pin(bytes calldata cid) external payable returns (bool);
 
-    event Pinned(address indexed user, bytes indexed cid, uint gbh);
+    event Pinned(address indexed user, bytes indexed cid, uint bh);
 }
 
 contract owned {
@@ -35,7 +35,7 @@ contract owned {
 
 //TODO killable, and then refund full amount when dead?
 contract GOFSPinner is Pinner, owned {
-    // Rate in wei per GigaByteHour.
+    // Rate in atto GO per ByteHour.
     uint public rate;
     uint public deployed;
 
@@ -58,7 +58,10 @@ contract GOFSPinner is Pinner, owned {
             msg.value >= rate,
             "Cannot purchase 0 storage."
         );
-        uint gbh = msg.value/rate;
-        emit Pinned(msg.sender, cid, gbh);
+        uint bh = msg.value/rate;
+        //TODO tx.origin for forwarded proxy contract calls. They also must forward the payment as well...
+        emit Pinned(tx.origin, cid, bh);
     }
+
+    //TODO withdraw?
 }

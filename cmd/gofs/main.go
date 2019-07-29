@@ -32,6 +32,7 @@ func init() {
 	}
 }
 
+//TODO doc flags more
 func main() {
 	// Interrupt cancellation.
 	ctx, cancelFn := context.WithCancel(context.Background())
@@ -79,8 +80,8 @@ func main() {
 			Usage: "Pin a CID",
 			Flags: []cli.Flag{
 				cli.Uint64Flag{
-					Name:  "gbh",
-					Usage: "Storage to purchase in GigaByteHours.",
+					Name:  "bh",
+					Usage: "Storage to purchase in ByteHours.",
 				},
 				cli.StringFlag{
 					Name:   "private-key, pk",
@@ -93,9 +94,10 @@ func main() {
 				if cid == "" {
 					return errors.New("missing CID")
 				}
-				gbh := c.Uint64("gbh")
-				if gbh == 0 {
-					return fmt.Errorf("gbh missing or invalid")
+				//TODO or accept amount in go/wei
+				bh := c.Uint64("bh")
+				if bh == 0 {
+					return fmt.Errorf("bh missing or invalid")
 				}
 				contract, err := parseAddress(contract)
 				if err != nil {
@@ -106,12 +108,12 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("invalid private key %q: %v", pkStr, err)
 				}
-				return Pin(ctx, rpc, contract, pk, cid, gbh)
+				return Pin(ctx, rpc, contract, pk, cid, bh)
 			},
 		},
 		{
 			Name:  "rate",
-			Usage: "Get the current storage rate in wei per GigaByteHour.",
+			Usage: "Get the current storage rate in atto GO per ByteHour.",
 			Action: func(c *cli.Context) error {
 				contract, err := parseAddress(contract)
 				if err != nil {
@@ -122,7 +124,7 @@ func main() {
 		},
 		{
 			Name:  "cost",
-			Usage: "Get the current storage cost in wei for the given size and duration.",
+			Usage: "Get the current storage cost in atto GO for the given size and duration.",
 			Flags: []cli.Flag{
 				cli.Uint64Flag{
 					Name:  "duration, d",
@@ -136,6 +138,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
+				//TODO accept go duration
 				dur := c.Int64("duration")
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
@@ -152,6 +155,7 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("invalid contract: %v", err)
 				}
+				//TODO print BHs too
 				return Cost(ctx, rpc, contract, int64(bytes), dur)
 			},
 		},
@@ -270,8 +274,8 @@ func parseAddress(addr string) (common.Address, error) {
 	return common.HexToAddress(addr), nil
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, gbh uint64) error {
-	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, gbh)
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) error {
+	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, bh)
 	if err != nil {
 		return fmt.Errorf("failed to pin: %v", err)
 	}
@@ -279,7 +283,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	case types.ReceiptStatusFailed:
 		return fmt.Errorf("tx %s failed", h.Hex())
 	case types.ReceiptStatusSuccessful:
-		fmt.Printf("Purchased %d GigaByteHours of storage for %s.\n", gbh, ci)
+		fmt.Printf("Purchased %d ByteHours of storage for %s.\n", bh, ci)
 		fmt.Printf("https://testnet-explorer.gochain.io/tx/%s\n", h.Hex())
 		return nil
 	default:
@@ -346,7 +350,7 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 		return err
 	}
 	//TODO friendlier units?
-	fmt.Printf("Current storage rate: %d wei per GBHour.\n\n", rate)
+	fmt.Printf("Current storage rate: %d atto GO per ByteHour.\n\n", rate)
 
 	fmt.Println("Cost:")
 	for _, vals := range []struct {
@@ -362,7 +366,8 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 		{bytes: 10 * units.GiB, hrs: 24 * 7 * 52},
 		{bytes: units.Tebibyte, hrs: 24 * 7 * 52},
 	} {
-		cost := gofs.ComputeCost(rate, int64(vals.bytes), vals.hrs)
+		bh := new(big.Int).Mul(big.NewInt(int64(vals.bytes)), big.NewInt(vals.hrs))
+		cost := bh.Mul(bh, rate)
 
 		fmt.Println("\t", costStr(int64(vals.bytes), vals.hrs, cost))
 	}
@@ -393,7 +398,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, f gof
 		return err
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tGBH\tUser\t")
+	fmt.Fprintln(w, "Block\tTx\tLog\tRemoved\tCID\tBH\tUser\t")
 	for _, r := range receipts {
 		fmt.Fprintf(w,
 			"%d\t%d\t%d\t%t\t%s\t%s\t%s\t\n",
@@ -402,7 +407,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, f gof
 			r.LogNum,
 			r.Removed,
 			r.CID.String(),
-			r.GBH,
+			r.BH,
 			r.User.Hex(),
 		)
 	}
