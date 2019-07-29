@@ -13,8 +13,8 @@ VERSION:
 
 COMMANDS:
      pin       Pin a CID
-     rate      Get the current storage rate in wei per GigaByteHour.
-     cost      Get the current storage cost in wei for the given size and duration.
+     rate      Get the current storage rate in atto GO per ByteHour.
+     cost      Get the current storage cost in atto GO for the given size and duration.
      add       Add and pin a file.
      status    Get the current storage status for a CID.
      receipts  Query for receipts.

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alecthomas/units"
 	"github.com/gochain-io/gochain/v3"
 	"github.com/gochain-io/gochain/v3/accounts/abi"
 	"github.com/gochain-io/gochain/v3/accounts/abi/bind"
@@ -37,6 +36,7 @@ func init() {
 	pinMethod = pinnerABI.Methods["pin"]
 }
 
+// Rate returns the storage cost rate in atto GO per ByteHour.
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
@@ -47,14 +47,6 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int
 		return nil, err
 	}
 	return p.Rate(&bind.CallOpts{Context: ctx})
-}
-
-func ComputeCost(rate *big.Int, bytes, hrs int64) *big.Int {
-	gbh := big.NewRat(bytes*hrs, int64(units.GiB))
-	rat := new(big.Rat).Mul(gbh, new(big.Rat).SetInt(rate))
-	// This is gross but there doesn't appear to be a way to go from big.Rat to big.Int directly, and we need the Rat precision.
-	c, _ := new(big.Int).SetString(rat.FloatString(0), 10)
-	return c
 }
 
 // Cost calculates the storage cost at the current rate.
@@ -71,7 +63,8 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hr
 	if err != nil {
 		return
 	}
-	cost = ComputeCost(rate, bytes, hrs)
+	bh := new(big.Int).Mul(big.NewInt(bytes), big.NewInt(hrs))
+	cost = bh.Mul(bh, rate)
 	return
 }
 
@@ -95,7 +88,7 @@ func AddFile(ctx context.Context, apiURL, path string) (AddResponse, error) {
 	return NewClient(apiURL).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, gbh uint64) (common.Hash, *types.Receipt, error) {
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) (common.Hash, *types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
 		return common.Hash{}, nil, fmt.Errorf("invalid cid %q: %v", ci, err)
@@ -115,7 +108,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	if err != nil {
 		return common.Hash{}, nil, err
 	}
-	cost := new(big.Int).Mul(rate, big.NewInt(int64(gbh)))
+	cost := new(big.Int).Mul(rate, big.NewInt(int64(bh)))
 	opts := &bind.TransactOpts{
 		Context: ctx,
 		From:    crypto.PubkeyToAddress(pk.PublicKey),
@@ -180,7 +173,7 @@ func UnpackPinInputs(data []byte) (pi PinInputs, err error) {
 type Receipt struct {
 	User    common.Address
 	CID     cid.Cid
-	GBH     *big.Int
+	BH      *big.Int
 	Tx      *types.Transaction
 	BlNum   uint64
 	TxNum   uint
@@ -255,7 +248,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 		receipts = append(receipts, Receipt{
 			User:    from,
 			CID:     ci,
-			GBH:     event.Gbh,
+			BH:      event.Bh,
 			Tx:      tx,
 			BlNum:   l.BlockNumber,
 			TxNum:   l.TxIndex,
