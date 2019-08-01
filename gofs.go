@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	parsed, err := abi.JSON(strings.NewReader(PinnerABI))
+	parsed, err := abi.JSON(strings.NewReader(GOFSABI))
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse generated abi: %v", err))
 	}
@@ -36,13 +36,13 @@ func init() {
 	pinMethod = pinnerABI.Methods["pin"]
 }
 
-// Rate returns the storage cost rate in atto GO per ByteHour.
+// Rate returns the storage cost rate in attoGO per ByteHour.
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
 	}
-	p, err := NewPinner(contract, gc)
+	p, err := NewIGOFS(contract, gc)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hr
 	if err != nil {
 		return
 	}
-	p, err := NewPinner(contract, gc)
+	p, err := NewIGOFS(contract, gc)
 	if err != nil {
 		return
 	}
@@ -88,25 +88,25 @@ func AddFile(ctx context.Context, apiURL, path string) (AddResponse, error) {
 	return NewClient(apiURL).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) (common.Hash, *types.Receipt, error) {
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) (*types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
-		return common.Hash{}, nil, fmt.Errorf("invalid cid %q: %v", ci, err)
+		return nil, fmt.Errorf("invalid cid %q: %v", ci, err)
 	}
 	if cid.Version() == 0 {
-		return common.Hash{}, nil, errors.New("version 0 CID not supported")
+		return nil, errors.New("version 0 CID not supported")
 	}
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
-		return common.Hash{}, nil, err
+		return nil, err
 	}
-	p, err := NewPinner(contract, gc)
+	p, err := NewIGOFS(contract, gc)
 	if err != nil {
-		return common.Hash{}, nil, err
+		return nil, err
 	}
 	rate, err := p.Rate(&bind.CallOpts{Context: ctx})
 	if err != nil {
-		return common.Hash{}, nil, err
+		return nil, err
 	}
 	cost := new(big.Int).Mul(rate, big.NewInt(int64(bh)))
 	opts := &bind.TransactOpts{
@@ -120,13 +120,64 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	}
 	tx, err := p.Pin(opts, cid.Bytes())
 	if err != nil {
-		return common.Hash{}, nil, fmt.Errorf("failed to pin %q: %v", cid, err)
+		return nil, fmt.Errorf("failed to pin %q: %v", cid, err)
 	}
 	r, err := WaitForReceipt(ctx, gc, tx.Hash())
 	if err != nil {
-		return common.Hash{}, nil, fmt.Errorf("failed to get receipt for tx %s: %v", tx.Hash().Hex(), err)
+		return nil, fmt.Errorf("failed to get receipt for tx %s: %v", tx.Hash().Hex(), err)
 	}
-	return tx.Hash(), r, nil
+	return r, nil
+}
+
+// Wallet returns the deposit wallet address for a CID, or an empty address if none exists.
+func Wallet(ctx context.Context, rpcURL string, contract common.Address, ci string) (common.Address, error) {
+	cid, err := cid.Parse(ci)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("invalid cid %q: %v", ci, err)
+	}
+	if cid.Version() == 0 {
+		return common.Address{}, errors.New("version 0 CID not supported")
+	}
+	gc, err := goclient.Dial(rpcURL)
+	if err != nil {
+		return common.Address{}, err
+	}
+	p, err := NewIGOFS(contract, gc)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return p.Wallet(&bind.CallOpts{Context: ctx}, cid.Bytes())
+}
+
+// NewWallet creates a new deposit wallet for a CID.
+func NewWallet(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string) (*types.Receipt, error) {
+	cid, err := cid.Parse(ci)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cid %q: %v", ci, err)
+	}
+	if cid.Version() == 0 {
+		return nil, errors.New("version 0 CID not supported")
+	}
+	gc, err := goclient.Dial(rpcURL)
+	if err != nil {
+		return nil, err
+	}
+	p, err := NewIGOFS(contract, gc)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := p.NewWallet(&bind.TransactOpts{
+		Context: ctx,
+		From:    crypto.PubkeyToAddress(pk.PublicKey),
+		Signer: func(s types.Signer, _ common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			return types.SignTx(tx, s, pk)
+		},
+	}, cid.Bytes())
+	r, err := WaitForReceipt(ctx, gc, tx.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get receipt for tx %s: %v", tx.Hash().Hex(), err)
+	}
+	return r, err
 }
 
 // WaitForReceipt polls for a transaction receipt until it is available, or ctx is cancelled.
@@ -225,7 +276,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 	bc := bind.NewBoundContract(contract, pinnerABI, nil, nil, nil)
 	var receipts []Receipt
 	for _, l := range logs {
-		var event PinnerPinned
+		var event IGOFSPinned
 		if err := bc.UnpackLog(&event, "Pinned", l); err != nil {
 			return nil, err
 		}

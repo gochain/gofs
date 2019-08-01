@@ -10,3 +10,4 @@ install:
 
 test:
 	go test ./...
+	truffle test
