@@ -32,7 +32,6 @@ func init() {
 	}
 }
 
-//TODO doc flags more
 func main() {
 	// Interrupt cancellation.
 	ctx, cancelFn := context.WithCancel(context.Background())
@@ -94,7 +93,6 @@ func main() {
 				if cid == "" {
 					return errors.New("missing CID")
 				}
-				//TODO or accept amount in go/wei
 				bh := c.Uint64("bh")
 				if bh == 0 {
 					return fmt.Errorf("bh missing or invalid")
@@ -112,8 +110,35 @@ func main() {
 			},
 		},
 		{
+			Name:  "wallet",
+			Usage: "Get the deposit wallet for the CID.",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "private-key, pk",
+					Usage:  "Private key.",
+					EnvVar: "WEB3_PRIVATE_KEY",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				cid := c.Args().First()
+				if cid == "" {
+					return errors.New("missing CID")
+				}
+				contract, err := parseAddress(contract)
+				if err != nil {
+					return fmt.Errorf("invalid contract: %v", err)
+				}
+				pkStr := c.String("private-key")
+				pk, err := crypto.HexToECDSA(strings.TrimPrefix(pkStr, "0x"))
+				if err != nil {
+					return fmt.Errorf("invalid private key %q: %v", pkStr, err)
+				}
+				return Wallet(ctx, rpc, contract, pk, cid)
+			},
+		},
+		{
 			Name:  "rate",
-			Usage: "Get the current storage rate in atto GO per ByteHour.",
+			Usage: "Get the current storage rate in attoGO per ByteHour.",
 			Action: func(c *cli.Context) error {
 				contract, err := parseAddress(contract)
 				if err != nil {
@@ -124,7 +149,7 @@ func main() {
 		},
 		{
 			Name:  "cost",
-			Usage: "Get the current storage cost in atto GO for the given size and duration.",
+			Usage: "Get the current storage cost in attoGO for the given size and duration.",
 			Flags: []cli.Flag{
 				cli.Uint64Flag{
 					Name:  "duration, d",
@@ -138,7 +163,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				//TODO accept go duration
+				//TODO accept go duration?
 				dur := c.Int64("duration")
 				if dur == 0 {
 					return fmt.Errorf("duration missing or invalid")
@@ -155,7 +180,6 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("invalid contract: %v", err)
 				}
-				//TODO print BHs too
 				return Cost(ctx, rpc, contract, int64(bytes), dur)
 			},
 		},
@@ -275,19 +299,65 @@ func parseAddress(addr string) (common.Address, error) {
 }
 
 func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) error {
-	h, r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, bh)
+	r, err := gofs.Pin(ctx, rpcURL, contract, pk, ci, bh)
 	if err != nil {
 		return fmt.Errorf("failed to pin: %v", err)
 	}
 	switch r.Status {
 	case types.ReceiptStatusFailed:
-		return fmt.Errorf("tx %s failed", h.Hex())
+		return fmt.Errorf("tx %s failed", r.TxHash.Hex())
 	case types.ReceiptStatusSuccessful:
 		fmt.Printf("Purchased %d ByteHours of storage for %s.\n", bh, ci)
-		fmt.Printf("https://testnet-explorer.gochain.io/tx/%s\n", h.Hex())
+		fmt.Println("Tx:", r.TxHash.Hex())
 		return nil
 	default:
-		return fmt.Errorf("tx %s unrecognized receipt status: %d", h.Hex(), r.Status)
+		return fmt.Errorf("tx %s unrecognized receipt status: %d", r.TxHash.Hex(), r.Status)
+	}
+}
+
+func Wallet(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string) error {
+	w, err := gofs.Wallet(ctx, rpcURL, contract, ci)
+	if err != nil {
+		return fmt.Errorf("failed to get deposit wallet: %v", err)
+	}
+
+	if w != (common.Address{}) {
+		fmt.Println("Deposit wallet:", w.Hex())
+		return nil
+	}
+	fmt.Println("No deposit wallet exists for this CID. Create one? Y/N")
+	var s string
+	if _, err := fmt.Scan(&s); err != nil {
+		return fmt.Errorf("failed to read input: %v", err)
+	}
+	s = strings.TrimSpace(strings.ToLower(s))
+	switch s {
+	case "y", "yes":
+
+	default:
+		return nil
+	}
+
+	r, err := gofs.NewWallet(ctx, rpcURL, contract, pk, ci)
+	if err != nil {
+		return fmt.Errorf("failed to deploy deposit wallet: %v", err)
+	}
+	switch r.Status {
+	case types.ReceiptStatusFailed:
+		return fmt.Errorf("tx %s failed", r.TxHash.Hex())
+	case types.ReceiptStatusSuccessful:
+		fmt.Println("Created new wallet - Tx:", r.TxHash.Hex())
+		w, err := gofs.Wallet(ctx, rpcURL, contract, ci)
+		if err != nil {
+			return fmt.Errorf("failed to get deposit wallet: %v", err)
+		}
+		if w == (common.Address{}) {
+			return errors.New("address not found after successful creation")
+		}
+		fmt.Println("Deposit wallet:", w.Hex())
+		return nil
+	default:
+		return fmt.Errorf("tx %s unrecognized receipt status: %d", r.TxHash.Hex(), r.Status)
 	}
 }
 
@@ -349,8 +419,7 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 	if err != nil {
 		return err
 	}
-	//TODO friendlier units?
-	fmt.Printf("Current storage rate: %d atto GO per ByteHour.\n\n", rate)
+	fmt.Printf("Current storage rate: %d attoGO per ByteHour.\n\n", rate)
 
 	fmt.Println("Cost:")
 	for _, vals := range []struct {

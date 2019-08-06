@@ -9,12 +9,13 @@ USAGE:
    gofs [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.1
+   0.2.0
 
 COMMANDS:
      pin       Pin a CID
-     rate      Get the current storage rate in atto GO per ByteHour.
-     cost      Get the current storage cost in atto GO for the given size and duration.
+     wallet    Get the deposit wallet for the CID.
+     rate      Get the current storage rate in attoGO per ByteHour.
+     cost      Get the current storage cost in attoGO for the given size and duration.
      add       Add and pin a file.
      status    Get the current storage status for a CID.
      receipts  Query for receipts.

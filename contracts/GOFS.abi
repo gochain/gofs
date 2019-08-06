@@ -1,5 +1,19 @@
 [
   {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "cid",
+        "type": "bytes"
+      }
+    ],
+    "name": "newWallet",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [],
     "name": "rate",
@@ -22,12 +36,21 @@
       }
     ],
     "name": "setRate",
-    "outputs": [
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
       {
-        "name": "",
-        "type": "bool"
+        "name": "to",
+        "type": "address"
       }
     ],
+    "name": "withdraw",
+    "outputs": [],
     "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"
@@ -41,14 +64,42 @@
       }
     ],
     "name": "pin",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "changeOwner",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "cid",
+        "type": "bytes"
+      }
+    ],
+    "name": "wallet",
     "outputs": [
       {
         "name": "",
-        "type": "bool"
+        "type": "address"
       }
     ],
-    "payable": true,
-    "stateMutability": "payable",
+    "payable": false,
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -96,6 +147,28 @@
       }
     ],
     "name": "Pinned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "cid",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "CreatedWallet",
     "type": "event"
   }
 ]
