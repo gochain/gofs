@@ -17,8 +17,12 @@ interface IGOFS {
 
     // Create a deposit wallet for a cid. Returns false if one already exists. CID must not be version 0.
     // Emits CreatedWallet events.
-    // Uses ~226935 gas.
+    // Uses <=300000 gas.
     function newWallet(bytes calldata cid) external;
+
+    // Returns the CID which produces this keccak256 hash.
+    // CID must have produced a CreatedWallet or Pinned event from this contract.
+    function cidByHash(bytes32 hash) external view returns (bytes memory);
 
     // Emitted when a cid is pinned.
     event Pinned(address indexed user, bytes indexed cid, uint bh);
@@ -75,6 +79,8 @@ contract GOFS is IGOFS, owned {
 
     // Wallet contracts for CIDs.
     mapping(bytes=>address) wallets;
+    // keccak256(CID) => CID
+    mapping(bytes32=>bytes) public cidByHash;
 
     constructor(uint _rate) public {
         rate = _rate;
@@ -108,6 +114,7 @@ contract GOFS is IGOFS, owned {
         );
         uint bh = msg.value/rate;
         emit Pinned(tx.origin, cid, bh);
+        _ensureHashStored(cid);
     }
 
     function wallet(bytes memory cid) public view returns (address) {
@@ -126,5 +133,13 @@ contract GOFS is IGOFS, owned {
         Wallet w = new Wallet(address(this), cid);
         wallets[cid] = address(w);
         emit CreatedWallet(msg.sender, cid, address(w));
+        _ensureHashStored(cid);
+    }
+
+    function _ensureHashStored(bytes memory cid) internal {
+        bytes32 hash = keccak256(cid);
+        if (cidByHash[hash].length == 0) {
+            cidByHash[hash] = cid;
+        }
     }
 }

@@ -62,6 +62,25 @@
   },
   {
     "constant": true,
+    "inputs": [
+      {
+        "name": "hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cidByHash",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
     "inputs": [],
     "name": "deployed",
     "outputs": [
