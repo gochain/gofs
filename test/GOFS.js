@@ -15,6 +15,7 @@ contract("GOFS", async accounts => {
         const bh = 100;
         const val = rate * bh;
         let tx = await gofs.pin(cid.buffer, {value: val});
+        console.log("Gas used to call pin:", tx.receipt.gasUsed);
         truffleAssert.eventEmitted(tx, 'Pinned', (ev) => {
             return ev.user == accounts[0] &&
                 ev.cid == web3.utils.keccak256(cid.buffer) &&
@@ -32,9 +33,10 @@ contract("GOFS", async accounts => {
 
         let tx = await gofs.newWallet(cid.buffer);
         console.log("Gas used to create a new wallet:", tx.receipt.gasUsed);
+        let hash = web3.utils.keccak256(cid.buffer);
         truffleAssert.eventEmitted(tx, 'CreatedWallet', (ev) => {
             return ev.user == accounts[0] &&
-                ev.cid == web3.utils.keccak256(cid.buffer);
+                ev.cid == hash;
         });
         let addr = await gofs.wallet(cid.buffer);
         assert.notEqual(addr, 0, "Expected a wallet contract address");
@@ -46,13 +48,14 @@ contract("GOFS", async accounts => {
         }
 
         const bh = 100;
-        let receipt = await web3.eth.sendTransaction({from: accounts[0], to: addr, value: bh * rate});
+        let receipt = await web3.eth.sendTransaction({from: accounts[0], to: addr, value: bh * rate, gas: 300000});
         tx = await truffleAssert.createTransactionResult(gofs, receipt.transactionHash);
         truffleAssert.eventEmitted(tx, 'Pinned', (ev) => {
             return ev.user == accounts[0] &&
-                ev.cid == web3.utils.keccak256(cid.buffer) &&
+                ev.cid == hash &&
                 ev.bh == bh;
         });
+        assert.equal(await gofs.cidByHash(hash), '0x' + cid.buffer.toString('hex'), "Unexpected CID for hash");
     })
 
     it("owner", async () => {
