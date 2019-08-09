@@ -368,7 +368,7 @@ func Add(ctx context.Context, apiURL, path string) error {
 	}
 	fmt.Println("File uploaded and pinned.")
 	fmt.Println("CID:", ar.CID)
-	fmt.Println("Pinned until:", ar.Expiration)
+	fmt.Println("Pinned until:", time.Unix(ar.Expiration, 0))
 	fmt.Println("File size:", units.Base2Bytes(ar.Size))
 	return nil
 }
@@ -448,15 +448,16 @@ func Status(ctx context.Context, apiURL, ci string) error {
 	if err != nil {
 		return err
 	}
-	if st.Expiration == (time.Time{}) {
+	if st.Expiration == 0 {
 		fmt.Println("Never been pinned.")
 		return nil
 	}
 	fmt.Println("File size:", units.Base2Bytes(st.Size))
-	if until := time.Until(st.Expiration); until > 0 {
-		fmt.Printf("Expires in %s at %s.\n", until, st.Expiration)
+	exp := time.Unix(st.Expiration, 0)
+	if until := time.Until(exp).Round(time.Second); until > 0 {
+		fmt.Printf("Expires in %s at %s.\n", until, exp)
 	} else {
-		fmt.Printf("Expired %s ago at %s.\n", -until, st.Expiration)
+		fmt.Printf("Expired %s ago at %s.\n", -until, exp)
 	}
 	return nil
 }
