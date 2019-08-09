@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/gochain-io/gochain/v3/common"
 	cid "github.com/ipfs/go-cid"
@@ -26,14 +25,14 @@ type API interface {
 	Status(ctx context.Context, ci cid.Cid) (StatusResponse, error)
 }
 type AddResponse struct {
-	CID        string    `json:"cid"`
-	Expiration time.Time `json:"expiration"`
-	Size       int64     `json:"size"` // File size in bytes.
+	CID        string `json:"cid"`
+	Expiration int64  `json:"expiration"` // Unix TS
+	Size       int64  `json:"size"`       // File size in bytes.
 }
 
 type StatusResponse struct {
-	Expiration time.Time `json:"expiration,omitempty"`
-	Size       int64     `json:"size"` // File size in bytes.
+	Expiration int64 `json:"expiration,omitempty"` // Unix TS
+	Size       int64 `json:"size"`                 // File size in bytes.
 }
 
 func NewClient(url string) API {
