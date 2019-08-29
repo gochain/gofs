@@ -159,7 +159,7 @@ func main() {
 				cli.StringFlag{
 					Name:  "size, s",
 					Usage: "Storage size.",
-					Value: units.GiB.String(),
+					Value: units.GB.String(),
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -169,7 +169,7 @@ func main() {
 					return fmt.Errorf("duration missing or invalid")
 				}
 				sizeStr := c.String("size")
-				bytes, err := units.ParseBase2Bytes(sizeStr)
+				bytes, err := units.ParseMetricBytes(sizeStr)
 				if err != nil {
 					return fmt.Errorf("invalid size %q: %v", sizeStr, err)
 				}
@@ -369,7 +369,7 @@ func Add(ctx context.Context, apiURL, path string) error {
 	fmt.Println("File uploaded and pinned.")
 	fmt.Println("CID:", ar.CID)
 	fmt.Println("Pinned until:", time.Unix(ar.Expiration, 0))
-	fmt.Println("File size:", units.Base2Bytes(ar.Size))
+	fmt.Println("File size:", units.MetricBytes(ar.Size))
 	return nil
 }
 
@@ -385,7 +385,7 @@ func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hr
 }
 
 func costStr(bytes int64, hrs int64, cost *big.Int) string {
-	return fmt.Sprintf("%s for %s: %s GO", units.Base2Bytes(bytes), prettyHours(hrs), web3.WeiAsBase(cost))
+	return fmt.Sprintf("%s for %s: %s GO", units.MetricBytes(bytes), prettyHours(hrs), web3.WeiAsBase(cost))
 }
 
 func prettyHours(hours int64) string {
@@ -423,17 +423,17 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 
 	fmt.Println("Cost:")
 	for _, vals := range []struct {
-		bytes units.Base2Bytes
+		bytes units.MetricBytes
 		hrs   int64
 	}{
-		{bytes: units.GiB, hrs: 1},
-		{bytes: 10 * units.GiB, hrs: 1},
-		{bytes: units.TiB, hrs: 1},
-		{bytes: units.GiB, hrs: 24},
-		{bytes: units.GiB, hrs: 24 * 7},
-		{bytes: units.GiB, hrs: 24 * 7 * 52},
-		{bytes: 10 * units.GiB, hrs: 24 * 7 * 52},
-		{bytes: units.Tebibyte, hrs: 24 * 7 * 52},
+		{bytes: units.GB, hrs: 1},
+		{bytes: 10 * units.GB, hrs: 1},
+		{bytes: units.TB, hrs: 1},
+		{bytes: units.GB, hrs: 24},
+		{bytes: units.GB, hrs: 24 * 7},
+		{bytes: units.GB, hrs: 24 * 7 * 52},
+		{bytes: 10 * units.GB, hrs: 24 * 7 * 52},
+		{bytes: units.Terabyte, hrs: 24 * 7 * 52},
 	} {
 		bh := new(big.Int).Mul(big.NewInt(int64(vals.bytes)), big.NewInt(vals.hrs))
 		cost := bh.Mul(bh, rate)
@@ -452,7 +452,7 @@ func Status(ctx context.Context, apiURL, ci string) error {
 		fmt.Println("Never been pinned.")
 		return nil
 	}
-	fmt.Println("File size:", units.Base2Bytes(st.Size))
+	fmt.Println("File size:", units.MetricBytes(st.Size))
 	exp := time.Unix(st.Expiration, 0)
 	if until := time.Until(exp).Round(time.Second); until > 0 {
 		fmt.Printf("Expires in %s at %s.\n", until, exp)

@@ -115,7 +115,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 		Signer: func(s types.Signer, _ common.Address, tx *types.Transaction) (*types.Transaction, error) {
 			return types.SignTx(tx, s, pk)
 		},
-		GasLimit: 50000,
+		GasLimit: 100000,
 		Value:    cost,
 	}
 	tx, err := p.Pin(opts, cid.Bytes())
