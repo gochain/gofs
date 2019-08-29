@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/alecthomas/units"
-	"github.com/gochain-io/gochain/v3/common"
-	"github.com/gochain-io/gochain/v3/core/types"
-	"github.com/gochain-io/gochain/v3/crypto"
-	"github.com/gochain-io/gofs"
 	"github.com/gochain-io/web3"
+	"github.com/gochain/gochain/v3/common"
+	"github.com/gochain/gochain/v3/core/types"
+	"github.com/gochain/gochain/v3/crypto"
+	"github.com/gochain/gofs"
 	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli"
 )
