@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gochain-io/gochain/v3/common"
+	"github.com/gochain/gochain/v3/common"
 	cid "github.com/ipfs/go-cid"
 )
 
