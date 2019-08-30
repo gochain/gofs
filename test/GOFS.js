@@ -1,4 +1,5 @@
 const GOFS = artifacts.require("GOFS");
+const OwnerUpgradeableProxy = artifacts.require("OwnerUpgradeableProxy");
 const truffleAssert = require('truffle-assertions');
 const CID = require('cids');
 
@@ -8,7 +9,11 @@ contract("GOFS", async accounts => {
     let gofs;
 
     beforeEach(async () => {
-        gofs = await GOFS.new(rate);
+        let target = await GOFS.new();
+        let proxy = await OwnerUpgradeableProxy.new();
+        await proxy.upgrade(target.address);
+        gofs = await GOFS.at(proxy.address);
+        await gofs.setRate(rate);
     })
 
     it("pins", async () => {
