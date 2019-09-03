@@ -45,33 +45,35 @@ contract Wallet {
     }
 }
 
-contract owned {
-    constructor() public { owner = msg.sender; }
-    address payable owner;
+contract ProxyOwner {
+    bytes32 private constant ownerPosition = keccak256("gochain.proxy.owner");
 
-    // This contract only defines a modifier but does not use
-    // it: it will be used in derived contracts.
-    // The function body is inserted where the special symbol
-    // `_;` in the definition of a modifier appears.
-    // This means that if the owner calls this function, the
-    // function is executed and otherwise, an exception is
-    // thrown.
     modifier onlyOwner {
         require(
-            msg.sender == owner,
+            msg.sender == owner(),
             "Only owner can call this function."
         );
         _;
     }
 
+    function owner() public view returns (address addr) {
+        bytes32 pos = ownerPosition;
+        assembly {
+            addr := sload(pos)
+        }
+    }
+
     // Transfer ownership to a new account.
-    function changeOwner(address payable newOwner) public onlyOwner {
-        owner = newOwner;
+    function changeOwner(address payable addr) public onlyOwner {
+        bytes32 pos = ownerPosition;
+        assembly {
+            sstore(pos, addr)
+        }
     }
 }
 
 // The GOFS contract implements IGOFS and includes admin functions as well.
-contract GOFS is IGOFS, owned {
+contract GOFS is IGOFS, ProxyOwner {
     // Rate in attoGO per ByteHour.
     uint public rate;
     // Block number when deployed.
@@ -82,13 +84,11 @@ contract GOFS is IGOFS, owned {
     // keccak256(CID) => CID
     mapping(bytes32=>bytes) public cidByHash;
 
-    constructor(uint _rate) public {
-        rate = _rate;
-        deployed = block.number;
-    }
-
     // Set the storage rate in attoGO per ByteHour. Must be owner.
-    function setRate(uint _rate) public onlyOwner{
+    function setRate(uint _rate) public onlyOwner {
+        if (deployed == 0) {
+            deployed = block.number;
+        }
         rate = _rate;
     }
 
@@ -97,15 +97,13 @@ contract GOFS is IGOFS, owned {
         to.transfer(address(this).balance);
     }
 
-    //TODO kill function? fallback to reject/refund when dead?
-
     /* IGOFS functions: */
 
     /* rate() and deployed() are auto-generated */
 
     function pin(bytes memory cid) public payable {
         require(
-            !(cid[0] == 0x12 && cid[1] == 0x20),
+            version(cid) != 0,
             "Version 0 CID not allowed."
         );
         require(
@@ -121,9 +119,16 @@ contract GOFS is IGOFS, owned {
         return wallets[cid];
     }
 
+    function version(bytes memory cid) internal pure returns (uint) {
+        if (cid.length == 34 && cid[0] == 0x12 && cid[1] == 0x20) {
+            return 0;
+        }
+        return 1;
+    }
+
     function newWallet(bytes memory cid) public {
         require(
-            !(cid[0] == 0x12 && cid[1] == 0x20),
+            version(cid) != 0,
             "Version 0 CID not allowed."
         );
         require(
