@@ -2,7 +2,7 @@ pragma solidity ^0.5.3;
 
 // The IGOFS interface defines the public functions for GOFS.
 interface IGOFS {
-    // Returns the current rate in attoGO per ByteHour.
+    // Returns the current rate in attoGO per byte-hour.
     function rate() external view returns (uint);
 
     // Returns the number of the block when this contract was deployed.
@@ -74,7 +74,7 @@ contract ProxyOwner {
 
 // The GOFS contract implements IGOFS and includes admin functions as well.
 contract GOFS is IGOFS, ProxyOwner {
-    // Rate in attoGO per ByteHour.
+    // Rate in attoGO per byte-hour.
     uint public rate;
     // Block number when deployed.
     uint public deployed;
@@ -84,7 +84,7 @@ contract GOFS is IGOFS, ProxyOwner {
     // keccak256(CID) => CID
     mapping(bytes32=>bytes) public cidByHash;
 
-    // Set the storage rate in attoGO per ByteHour. Must be owner.
+    // Set the storage rate in attoGO per byte-hour. Must be owner.
     function setRate(uint _rate) public onlyOwner {
         if (deployed == 0) {
             deployed = block.number;
