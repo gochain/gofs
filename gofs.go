@@ -36,7 +36,7 @@ func init() {
 	pinMethod = pinnerABI.Methods["pin"]
 }
 
-// Rate returns the storage cost rate in attoGO per ByteHour.
+// Rate returns the storage cost rate in attoGO per byte-hour.
 func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int, error) {
 	gc, err := goclient.Dial(rpcURL)
 	if err != nil {
@@ -51,15 +51,7 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) (*big.Int
 
 // Cost calculates the storage cost at the current rate.
 func Cost(ctx context.Context, rpcURL string, contract common.Address, bytes, hrs int64) (rate *big.Int, cost *big.Int, err error) {
-	gc, err := goclient.Dial(rpcURL)
-	if err != nil {
-		return
-	}
-	p, err := NewIGOFS(contract, gc)
-	if err != nil {
-		return
-	}
-	rate, err = p.Rate(&bind.CallOpts{Context: ctx})
+	rate, err = Rate(ctx, rpcURL, contract)
 	if err != nil {
 		return
 	}
@@ -88,7 +80,7 @@ func AddFile(ctx context.Context, apiURL, path string) (AddResponse, error) {
 	return NewClient(apiURL).Add(ctx, f)
 }
 
-func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh uint64) (*types.Receipt, error) {
+func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.PrivateKey, ci string, bh *big.Int) (*types.Receipt, error) {
 	cid, err := cid.Parse(ci)
 	if err != nil {
 		return nil, fmt.Errorf("invalid cid %q: %v", ci, err)
@@ -108,7 +100,7 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	if err != nil {
 		return nil, err
 	}
-	cost := new(big.Int).Mul(rate, big.NewInt(int64(bh)))
+	cost := new(big.Int).Mul(rate, bh)
 	opts := &bind.TransactOpts{
 		Context: ctx,
 		From:    crypto.PubkeyToAddress(pk.PublicKey),
@@ -274,6 +266,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 	}
 
 	bc := bind.NewBoundContract(contract, pinnerABI, nil, nil, nil)
+	igofs, err := NewIGOFS(contract, gc)
 	var receipts []Receipt
 	for _, l := range logs {
 		var event IGOFSPinned
@@ -288,13 +281,13 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 		if err != nil {
 			return nil, fmt.Errorf("failed to look up tx sender %s: %v", l.TxHash, err)
 		}
-		pi, err := UnpackPinInputs(tx.Data())
+		cidBytes, err := igofs.CidByHash(&bind.CallOpts{Context: ctx}, event.Cid)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unpack pin inputs %s: %v", hexutil.Encode(tx.Data()), err)
+			return nil, fmt.Errorf("failed to get CID for hash %s: %v", event.Cid.Hex(), err)
 		}
-		ci, err := cid.Parse(pi.CID)
+		ci, err := cid.Parse(cidBytes)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse CID %s: %v", hexutil.Encode(pi.CID), err)
+			return nil, fmt.Errorf("failed to parse CID %s: %v", hexutil.Encode(cidBytes), err)
 		}
 		receipts = append(receipts, Receipt{
 			User:    from,

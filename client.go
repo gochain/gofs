@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	APIURL        = "https://gofs.io/api/v0/"
+	APIURL        = "https://api.gofs.io"
 	MainnetRPCURL = "https://rpc.gochain.io"
 )
 
@@ -35,6 +35,10 @@ type StatusResponse struct {
 	Size       int64 `json:"size"`                 // File size in bytes.
 }
 
+// DefaultClient uses the default APIURL: https://api.gofs.io
+var DefaultClient = NewClient(APIURL)
+
+// NewClient returns a new client backed by url.
 func NewClient(url string) API {
 	return &client{
 		url: url,
@@ -46,7 +50,7 @@ type client struct {
 }
 
 func (c *client) Add(ctx context.Context, r io.ReadCloser) (AddResponse, error) {
-	req, err := http.NewRequest("PUT", c.url+"add", r)
+	req, err := http.NewRequest("PUT", c.url+"/v0/add", r)
 	if err != nil {
 		return AddResponse{}, err
 	}
@@ -65,11 +69,14 @@ func (c *client) Add(ctx context.Context, r io.ReadCloser) (AddResponse, error) 
 }
 
 func (c *client) Status(ctx context.Context, ci cid.Cid) (StatusResponse, error) {
-	resp, err := http.Get(c.url + "status/" + ci.String())
+	resp, err := http.Get(c.url + "/v0/status/" + ci.String())
 	if err != nil {
 		return StatusResponse{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return StatusResponse{}, nil
+		}
 		return StatusResponse{}, fmt.Errorf("http error: %d - %s", resp.StatusCode, resp.Status)
 	}
 	var sr StatusResponse
