@@ -16,7 +16,7 @@ initially pinned for a grace period of one hour, during which the expiration
 #### 2. Pin: Pay to pin a CID 
 
 Pay to pin a file on IPFS. Payments are made on the blockchain to the GOFS
-smart contract. This can be done through the [web interface](https://gofs.io/status)
+smart contract. This can be done through the [web interface](https://gofs.io/)
 with MetaMask, on the command line with the [gofs cli](./cmd/gofs), or 
 programmatically against the [contract itself](#Contract-ABI). Each payment
 purchases storage for a particular CID (measured in _byte-hours_). The amount of 
@@ -25,9 +25,9 @@ and this value is included on the emitted `Pinned` event. When GOFS processes th
 events, the storage amount and the file size determine how much to extend the expiration.
 The `Pinned` events emitted by the GOFS contract serve as a public, auditable trail of receipts.
 
-#### Deposit Wallets
+#### File Wallets
 
-Deposit wallets are addresses which can receive standard txs to fund a particular CID.
+File wallets are addresses which can receive standard txs to extend the life of a particular file.
 They are mini-contracts which only contain a fallback function to forward payment to the
 GOFS contract. This removes barriers for users created by complex smart contract interaction,
 while still utilizing the same underlying mechanisms, so the same kind of `Pinned` events are 
@@ -86,11 +86,11 @@ interface IGOFS {
 
 ## JSON API
 
-The JSON API used by the web interface is available at: `https://gofs.io/api/v0/`
+The JSON API used by the web interface is available at: `https://api.gofs.io/v0/`
 
 ### Info
 
-[`GET /info`](https://gofs.io/api/v0/info)
+[`GET /info`](https://api.gofs.io/v0/info)
 
 Response:
 
@@ -106,7 +106,7 @@ Response:
 
 ### Status
 
-[`GET /status/{cid}`](https://gofs.io/api/v0/status/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
+[`GET /status/{cid}`](https://api.gofs.io/v0/status/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
 
 Response:
 
@@ -133,7 +133,7 @@ Response:
 
 ### Convert CID
 
-[`GET /convert-cid/{cid}`](https://gofs.io/api/v0/convert-cid/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
+[`GET /convert-cid/{cid}`](https://api.gofs.io/v0/convert-cid/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
 
 Response:
 
