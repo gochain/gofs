@@ -1,7 +1,8 @@
 # GOFS - GoChain FileSystem - https://gofs.io
 
 GOFS is a pay-to-pin IPFS service built on GoChain.
-Payments processed on the blockchain fund storing files on the GOFS IPFS cluster. 
+Payments processed on the blockchain fund the storage of files on GoFS to ensure the 
+files are always available on IPFS. 
 
 ## How to Use
 
@@ -13,7 +14,7 @@ Add a new file to IPFS by uploading it to GOFS. This can be done through the
 [web interface](https://gofs.io) or the [JSON API](#Add). New files are 
 initially pinned for a grace period of one hour, during which the expiration  
 
-#### 2. Pin: Pay to pin a CID 
+#### 2. Pin: Pay to pin a file 
 
 Pay to pin a file on IPFS. Payments are made on the blockchain to the GOFS
 smart contract. This can be done through the [web interface](https://gofs.io/)
