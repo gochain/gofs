@@ -97,9 +97,9 @@ func main() {
 					Name:  "until, u",
 					Usage: "Date to extend expiration until. Format: yyyy-MM-dd. Not compatible with --extend or --bh.",
 				},
-				cli.Int64Flag{
+				cli.StringFlag{
 					Name:  "size, s",
-					Usage: "File size in bytes. Optional. If omitted, file size will be fetched from GOFS or IPFS.",
+					Usage: "File size in bytes. Example: 1.4KB. Optional. If omitted, file size will be fetched from GOFS or IPFS.",
 				},
 				cli.Uint64Flag{
 					Name:  "bh",
@@ -187,9 +187,9 @@ func main() {
 					Name:  "until, u",
 					Usage: "Date to extend expiration until. Format: yyyy-MM-dd. Not compatible with --extend or --bh.",
 				},
-				cli.Int64Flag{
+				cli.StringFlag{
 					Name:  "size, s",
-					Usage: "File size in bytes. Required for --extend and --until without CID.",
+					Usage: "File size in bytes. Example: 1.4KB. Required for --extend and --until without CID.",
 				},
 				cli.Uint64Flag{
 					Name:  "bh",
@@ -340,7 +340,10 @@ func byteHourActionHelper(c *cli.Context, api, cid string) (byteHourFn, error) {
 		date := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 		var size int64
 		if c.IsSet("size") {
-			size = c.Int64("size")
+			size, err = units.ParseStrictBytes(c.String("size"))
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse size: %v", err)
+			}
 			if size <= 0 {
 				return nil, fmt.Errorf("invalid size")
 			}
@@ -367,7 +370,10 @@ func byteHourActionHelper(c *cli.Context, api, cid string) (byteHourFn, error) {
 			}
 			return byteHoursFromDuration(api, cid, dur), nil
 		}
-		size := c.Int64("size")
+		size, err := units.ParseStrictBytes(c.String("size"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse size: %v", err)
+		}
 		if size <= 0 {
 			return nil, fmt.Errorf("invalid size")
 		}
@@ -676,9 +682,20 @@ func parseDuration(dur string) (int, int, error) {
 	last := dur[len(dur)-1]
 	switch last {
 	case 'd':
+		yi := strings.Index(dur, "y")
+		ds := dur[yi+1 : len(dur)-1]
+		d64, err := strconv.ParseInt(ds, 10, 0)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid day %q: %v", ds, err)
+		}
+		d = int(d64)
+		dur = dur[:yi+1]
 		fallthrough
 	case 'y':
-		ys := dur[:last]
+		if dur == "" {
+			break
+		}
+		ys := dur[:len(dur)-1]
 		y64, err := strconv.ParseInt(ys, 10, 0)
 		if err != nil {
 			return 0, 0, fmt.Errorf("invalid year %q: %v", ys, err)
@@ -707,9 +724,9 @@ func Rate(ctx context.Context, rpcURL string, contract common.Address) error {
 		{bytes: units.MB, hrs: 24 * 30},
 		{bytes: units.GB, hrs: 24 * 30},
 		// 1 year
-		{bytes: units.KB, hrs: 24 * 7 * 52},
-		{bytes: units.MB, hrs: 24 * 7 * 52},
-		{bytes: units.GB, hrs: 24 * 7 * 52},
+		{bytes: units.KB, hrs: 24 * 365},
+		{bytes: units.MB, hrs: 24 * 365},
+		{bytes: units.GB, hrs: 24 * 365},
 	} {
 		bh := new(big.Int).Mul(big.NewInt(int64(vals.bytes)), big.NewInt(vals.hrs))
 		cost := bh.Mul(bh, rate)
