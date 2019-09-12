@@ -1,37 +1,37 @@
-# GOFS - GoChain FileSystem - https://gofs.io
+# GoFS - GoChain FileSystem - https://gofs.io
 
-GOFS is a pay-to-pin IPFS service built on GoChain.
+GoFS is a pay-to-pin IPFS service built on GoChain.
 Payments processed on the blockchain fund the storage of files on GoFS to ensure the 
 files are always available on IPFS. There are three ways to interface with GoFS: the web interface, the CLI and the API. 
 You can find information about all 3 below.
 
 ## How to Use
 
-There are two primary functions that you'll use when interacting with GOFS: adding a file and paying for storage.
+There are two primary functions that you'll use when interacting with GoFS: adding a file and paying for storage.
 
 ### 1. Add: Upload a file
  
-Add a new file to IPFS by uploading it to GOFS. This can be done through the
+Add a new file to IPFS by uploading it to GoFS. This can be done through the
 [web interface](https://gofs.io) or the [JSON API](#Add). New files are 
 initially pinned for a grace period of one hour.
 
 ### 2. Pin: Pay to extend the life of a file
 
-Pay to pin a file on IPFS. Payments are made on the blockchain to the GOFS
+Pay to pin a file on IPFS. Payments are made on the blockchain to the GoFS
 smart contract. This can be done through the [web interface](https://gofs.io/)
 with MetaMask, on the command line with the [gofs cli](./cmd/gofs), or 
 programmatically against the [contract itself](#Contract-ABI). Each payment
 purchases storage for a particular CID (measured in _byte-hours_). The amount of 
 storage credited is calculated based on the contract rate (measured in _attoGo/byte-hour_) 
-and this value is included on the emitted `Pinned` event. When GOFS processes these 
+and this value is included on the emitted `Pinned` event. When GoFS processes these 
 events, the storage amount and the file size determine how much to extend the expiration.
-The `Pinned` events emitted by the GOFS contract serve as a public, auditable trail of receipts.
+The `Pinned` events emitted by the GoFS contract serve as a public, auditable trail of receipts.
 
 #### File Wallets
 
 File wallets are addresses which can receive standard txs to extend the life of a particular file.
 They are mini-contracts which only contain a fallback function to forward payment to the
-GOFS contract. This removes barriers for users created by complex smart contract interaction,
+GoFS contract. This removes barriers for users created by complex smart contract interaction,
 while still utilizing the same underlying mechanisms, so the same kind of `Pinned` events are 
 emitted when payments come through a wallet.
 
@@ -44,7 +44,7 @@ emitted when payments come through a wallet.
 
 ## Web Interface
 
-The [web interface](https://gofs.io) is the most user friendly way to use GOFS, and supports MetaMask integration.
+The [web interface](https://gofs.io) is the most user friendly way to use GoFS, and supports MetaMask integration.
 
 ## CLI
 
