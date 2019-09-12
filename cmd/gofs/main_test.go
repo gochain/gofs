@@ -52,7 +52,7 @@ func Test_parseDate(t *testing.T) {
 		t.Run(tt.date, func(t *testing.T) {
 			y, m, d, err := parseDate(tt.date)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("wrong err got %v; wantErr %v", err, tt.wantErr)
+				t.Errorf("wrong err: got %v; wantErr %v", err, tt.wantErr)
 				return
 			}
 			if y != tt.y {
@@ -63,6 +63,41 @@ func Test_parseDate(t *testing.T) {
 			}
 			if d != tt.d {
 				t.Errorf("wrong day got2 %v; want %v", d, tt.d)
+			}
+		})
+	}
+}
+
+func Test_parseDuration(t *testing.T) {
+	tests := []struct {
+		dur     string
+		y       int
+		d       int
+		wantErr bool
+	}{
+		{"1y", 1, 0, false},
+		{"10y", 10, 0, false},
+		{"100d", 0, 100, false},
+		{"1y1d", 1, 1, false},
+		{"10y100d", 10, 100, false},
+
+		{"", 0, 0, true},
+		{"1d1y", 0, 0, true},
+		{"1yy", 0, 0, true},
+		{"1y1dd", 0, 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.dur, func(t *testing.T) {
+			y, d, err := parseDuration(tt.dur)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("wrong err: got %v; wantErr %v", err, tt.wantErr)
+				return
+			}
+			if y != tt.y {
+				t.Errorf("wrong year: got %v; want %v", y, tt.y)
+			}
+			if d != tt.d {
+				t.Errorf("wrong day: got %v; want %v", d, tt.d)
 			}
 		})
 	}

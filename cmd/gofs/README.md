@@ -63,13 +63,13 @@ Cost:
 	 1.00KB for 30d: 0.000002043318240000 GO
 	 1.00MB for 30d: 0.002043318240000000 GO
 	 1.00GB for 30d: 2.043318240000000000 GO
-	 1.00KB for 364d: 0.000024792261312000 GO
-	 1.00MB for 364d: 0.024792261312000000 GO
-	 1.00GB for 364d: 24.792261312000000000 GO
+	 1.00KB for 1y: 0.000024860371920000 GO
+	 1.00MB for 1y: 0.024860371920000000 GO
+	 1.00GB for 1y: 24.860371920000000000 GO
 
-# Calculate the cost of storing a 1.3KB file for 1000 hours. 
-> gofs cost -s 1.3KB -d 1000
-1KB300B for 1y7w3d16h: 0.000036893246000000 GO
+# Calculate the cost of storing a 1.3KB file for 1 year. 
+> gofs cost -s 1.3KB -e 1y
+  11419200 bytes-hours: 0.000032407027286400 GO
 
 # Upload and pin a file to GOFS.
 > gofs add file.txt
