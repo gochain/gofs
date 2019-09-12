@@ -62,52 +62,106 @@ The JSON API used by the web interface is available at: `https://api.gofs.io/v0/
 
 ### Info
 
+Get general information about GoFS.
+
+#### Request:
+
 [`GET /info`](https://api.gofs.io/v0/info)
 
-Response:
+#### Response:
+
+An object with the following fields:
+
+- rate: current storage rate in attoGo per byte-hour
+- contract_address: address of the GoFS contract
+- explorer_url: block explorer URL for the GoChain network
+- rpc_url: RPC URL for the GoChain network
+- max_file_size: maximum supported file size, in bytes
+
+Example:
 
 ```json
 {
-  "rate": 1,
+  "rate": 2837942,
   "contract_address": "0xded28050fdbf604e12056e516c05e154cb5dd1bc",
   "explorer_url": "https:\/\/explorer.gochain.io\/",
   "rpc_url": "https:\/\/rpc.gochain.io",
-  "max_file_size": 1000000000 // in bytes
+  "max_file_size": 1000000000
 }
 ```
 
 ### Status
 
+Get the status for a file by IPFS CID hash.
+
+#### Request:
+
 [`GET /status/{cid}`](https://api.gofs.io/v0/status/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
 
-Response:
+#### Response:
+
+`HTTP 404`, if never added to GoFS. Otherwise, an object with the following fields:
+
+- expiration: unix timestamp of file expiration
+- size: file size, in bytes
+
+Example:
 
 ```json
 {
   "expiration": 1567619841,
-  "size": 6737 // in bytes
+  "size": 6737
 }
 ```
 
 ### Add
 
+Add a file to IPFS by uploading to GoFS. 
+Maximum file size is limited (see `max_file_size` from [/info](#info)).
+Files are initially pinned for a grace period of one hour.
+This can be extended by calling `pin()` on the GoFS [smart contract](#Contract-ABI).
+See [How to Use](#How-to-Use) for other methods.
+
+#### Request:
+
 `PUT /add`
 
-Response: 
+Body: File data, or a multi-part form file. 
+
+#### Response:
+
+An object with the following fields:
+- cid: IPFS CID hash for file
+- expiration: unix timestamp of file expiration
+- size: file size, in bytes
+
+Example:
 
 ```json
 {
   "cid": "bafkreic62jyg5yvckkumrnsqo43wfltlao4khbbf4mtj3if7hrbxbmikya",
-  "expiration": 1567619841, // unix timestamp
-  "size": 6737 // in bytes
+  "expiration": 1567619841,
+  "size": 6737
 }
 ```
 
 ### Convert CID
 
+Convert an IPFS CID hash to various standard forms: binary, default base, and event topic hash. 
+
+#### Request:
+
 [`GET /convert-cid/{cid}`](https://api.gofs.io/v0/convert-cid/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am)
 
-Response:
+#### Response:
+
+An object with the following fields:
+- binary: hex encoded binary CID hash (call `Pinned` with this)
+- base: default encoded (base32) CID hash
+- hash: hex encoded keccak256 of the binary CID (filter `Pinned` event topics with this)
+- version: CID version
+
+Example:
 
 ```json
 {
@@ -117,7 +171,6 @@ Response:
   "version": 1
 }
 ```
-
 
 ## Contract ABI
 
