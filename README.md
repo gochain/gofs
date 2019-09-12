@@ -114,6 +114,12 @@ Example:
 }
 ```
 
+#### Try it
+
+```sh
+curl https://api.gofs.io/v0/status/bafybeida2gv6hnykvwadda6zjcxuo5yrxzb6z7j7fhi2mz7o55carn6jla
+```
+
 ### Add
 
 Add a file to IPFS by uploading to GoFS. 
@@ -143,6 +149,12 @@ Example:
   "expiration": 1567619841,
   "size": 6737
 }
+```
+
+#### Try it
+
+```sh
+curl -X PUT -T myfile.png https://api.gofs.io/v0/add
 ```
 
 ### Convert CID
@@ -182,7 +194,8 @@ interface IGOFS {
     // Returns the current rate in attoGO per byte-hour.
     function rate() external view returns (uint);
 
-    // Pin a CID. Value must be greater than 0. CID must not be version 0.
+    // Pin a CID. Value (the GO value for your transaction) must be greater than 0. The GO value you pass in
+    // here is how long the file will be pinned for. CID must not be version 0.
     // Emits Pinned events.
     function pin(bytes calldata cid) external payable;
 
