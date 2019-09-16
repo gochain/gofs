@@ -30,13 +30,13 @@ USAGE:
    gofs [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.7.0
+   v0.8.0
 
 COMMANDS:
    pin       Pin a new CID or extend the expiry of an existing file.
-   wallet    Get the deposit wallet for the CID.
+   wallet    Get the deposit wallet for the CID or create one if none exists.
    rate      Get the current storage rate in attoGO per byte-hour.
-   cost      Get the current storage cost in attoGO for the given size and duration.
+   cost      Get the current storage cost for the given size and duration.
    add       Add and pin a file.
    status    Get the current storage status for a CID.
    receipts  Query for receipts.
@@ -44,7 +44,7 @@ COMMANDS:
 
 GLOBAL OPTIONS:
    --url value       GOFS API URL. (default: "https://api.gofs.io") [$GOFS_API]
-   --contract value  Hex contract address. (default: "0x0000000000000000000000000000000000001234") [$GOFS_CONTRACT]
+   --contract value  Hex contract address. (default: "0x545a6A1AE20a6091898a5cEe2D7b43A04D77d4C0") [$GOFS_CONTRACT]
    --rpc value       RPC URL. (default: "https://rpc.gochain.io") [$GOFS_RPC]
    --help, -h        show help
    --version, -v     print the version

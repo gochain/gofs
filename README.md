@@ -186,7 +186,7 @@ Example:
 
 ## Contract ABI
 
-If you want to interact with the contract directly, you can do that too. The GOFS contract is at 0xTODO, and implements the [contracts/IGOFS.abi](contracts/IGOFS.abi) interface:
+If you want to interact with the contract directly, you can do that too. The GOFS contract is at [0x545a6A1AE20a6091898a5cEe2D7b43A04D77d4C0](https://explorer.gochain.io/addr/0x545a6A1AE20a6091898a5cEe2D7b43A04D77d4C0?addr_tab=interact), and implements the [contracts/IGOFS.abi](contracts/IGOFS.abi) interface:
 
 ```solidity
 // The IGOFS interface defines the public functions for GOFS.
