@@ -213,7 +213,7 @@ Example:
 
 ```json
 {
-  "binary": "0x015512205ed2706ee2a252a8c8b650773762ae6b03b8a38425e3269da0bf3c4370b10ac0",
+  "binary": "0x6F7cbcf57762842a4C66F8e7d6135b2e7bcF7b52",
   "base": "bafkreic62jyg5yvckkumrnsqo43wfltlao4khbbf4mtj3if7hrbxbmikya",
   "hash": "0x60632b18db19d0f6d10a0f7dcf0eea38e8114eb867f34252c1f2c6ff148dc557",
   "version": 1
@@ -269,7 +269,7 @@ curl "localhost:80/v0/cost?size=1GB&days=30"
 
 ## Contract ABI
 
-If you want to interact with the contract directly, you can do that too. The GOFS contract is at 0xTODO, and implements the [contracts/IGOFS.abi](contracts/IGOFS.abi) interface:
+If you want to interact with the contract directly, you can do that too. The GOFS contract is at [0x6F7cbcf57762842a4C66F8e7d6135b2e7bcF7b52](https://explorer.gochain.io/addr/0x6F7cbcf57762842a4C66F8e7d6135b2e7bcF7b52?addr_tab=interact), and implements the [contracts/IGOFS.abi](contracts/IGOFS.abi) interface:
 
 ```solidity
 // The IGOFS interface defines the public functions for GOFS.
