@@ -16,7 +16,7 @@ const (
 	MainnetRPCURL = "https://rpc.gochain.io"
 )
 
-var MainnetAddress = common.HexToAddress("0x1234") //TODO
+var MainnetAddress = common.HexToAddress("0x6F7cbcf57762842a4C66F8e7d6135b2e7bcF7b52")
 
 type API interface {
 	// Add puts new data and temporarily pins.
