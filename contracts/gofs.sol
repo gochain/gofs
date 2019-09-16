@@ -1,6 +1,6 @@
 pragma solidity ^0.5.3;
 
-// The IGOFS interface defines the public functions for GOFS.
+// The IGOFS interface defines the public functions for GoFS.
 interface IGOFS {
     // Returns the current rate in attoGO per byte-hour.
     function rate() external view returns (uint);
@@ -8,14 +8,16 @@ interface IGOFS {
     // Returns the number of the block when this contract was deployed.
     function deployed() external view returns (uint);
 
-    // Pin a CID. Value must be greater than 0. CID must not be version 0.
+    // Pin a CID. Value (the GO value for your transaction) must be greater than 0. The GO value you pass in
+    // here is used to purchase storage for the file at the current rate. The amount of storage purchased
+    // determines how long the file will be pinned for. CID must not be version 0.
     // Emits Pinned events.
     function pin(bytes calldata cid) external payable;
 
-    // Get the address of the deposit wallet for a cid. Returns 0x0 if none exists.
+    // Get the address of the wallet for a cid. Returns 0x0 if none exists.
     function wallet(bytes calldata cid) external view returns (address);
 
-    // Create a deposit wallet for a cid. Returns false if one already exists. CID must not be version 0.
+    // Create a wallet for a cid. Returns false if one already exists. CID must not be version 0.
     // Emits CreatedWallet events.
     // Uses <=300000 gas.
     function newWallet(bytes calldata cid) external;
@@ -24,7 +26,7 @@ interface IGOFS {
     // CID must have produced a CreatedWallet or Pinned event from this contract.
     function cidByHash(bytes32 hash) external view returns (bytes memory);
 
-    // Emitted when a cid is pinned.
+    // Emitted when storage is purchased for a file. bh is amount of storage purchased in byte-hours.
     event Pinned(address indexed user, bytes indexed cid, uint bh);
     // Emitted when a new wallet is created.
     event CreatedWallet(address indexed user, bytes indexed cid, address wallet);

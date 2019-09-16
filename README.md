@@ -195,19 +195,20 @@ interface IGOFS {
     function rate() external view returns (uint);
 
     // Pin a CID. Value (the GO value for your transaction) must be greater than 0. The GO value you pass in
-    // here is how long the file will be pinned for. CID must not be version 0.
+    // here is used to purchase storage for the file at the current rate. The amount of storage purchased
+    // determines how long the file will be pinned for. CID must not be version 0.
     // Emits Pinned events.
     function pin(bytes calldata cid) external payable;
 
-    // Get the address of the deposit wallet for a cid. Returns 0x0 if none exists.
+    // Get the address of the wallet for a cid. Returns 0x0 if none exists.
     function wallet(bytes calldata cid) external view returns (address);
 
-    // Create a deposit wallet for a cid. Returns false if one already exists. CID must not be version 0.
+    // Create a wallet for a cid. Returns false if one already exists. CID must not be version 0.
     // Emits CreatedWallet events.
     // Uses <=300000 gas.
     function newWallet(bytes calldata cid) external;
 
-    // Emitted when a cid is pinned.
+    // Emitted when storage is purchased for a file. bh is amount of storage purchased in byte-hours.
     event Pinned(address indexed user, bytes indexed cid, uint bh);
     // Emitted when a new wallet is created.
     event CreatedWallet(address indexed user, bytes indexed cid, address wallet);
