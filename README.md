@@ -90,6 +90,42 @@ Example:
 }
 ```
 
+### Rate
+
+Get the current rate. 
+
+#### Request:
+
+[`GET /info/rate`](https://api.gofs.io/v0/info/rate)
+
+#### Response:
+
+The rate in attoGo per byte-hour as a JSON number.
+
+Example:
+
+```json
+2837942
+```
+
+### Max File Size
+
+Get the current maximum file size. 
+
+#### Request:
+
+[`GET /info/max_file_size`](https://api.gofs.io/v0/info/max_file_size)
+
+#### Response:
+
+The maximum file size allowed in bytes as a JSON number.
+
+Example:
+
+```json
+1000000000
+```
+
 ### Status
 
 Get the status for a file by IPFS CID hash.
@@ -183,6 +219,53 @@ Example:
   "version": 1
 }
 ```
+
+### Cost
+
+Calculate the cost of storage for a file (or an arbitrary size) over a duration at the current rate.   
+
+#### Request
+
+`GET /cost[/{cid}]?[days=][years=][size=]`
+
+Either the `cid` path param _or_ the `size` query param must be set.
+Also, one or both of `days` and `years` must be set.
+
+- cid: string - encoded IPFS CID for desired file (its `CumulativeSize` will be used)
+- size: integer/string - raw bytes, or formatted string (e.g. `1000000`, `1KB`, `1.01MB`)  
+- days: integer
+- years: integer
+
+#### Response
+
+An object with the following fields:
+- size: file size, in bytes
+- duration: duration of storage, in hours
+- rate: current rate, in attoGo per byte-hour
+- cost: cost of storage, in attoGo
+
+Example:
+
+```json
+{
+  "size": 1000000000,
+  "duration": 720,
+  "rate": 2837942,
+  "cost": 2043318240000000000
+}
+```
+
+#### Try it
+
+```sh
+curl "localhost:80/v0/cost?size=1GB&days=30"
+```
+
+[`/cost?size=115MB&years=1&days=100`](https://api.gofs.io/v0/cost?size=115MB&years=1&days=100)
+
+[`/cost?size=1MB&years=10`](https://api.gofs.io/v0/cost?size=1MB&years=10)
+
+[`/cost/QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco?days=30`](https://api.gofs.io/v0/cost/QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco?days=30)
 
 ## Contract ABI
 
