@@ -7,6 +7,7 @@ The `gofs` command line interface provides access to both the contract and the w
 Quickest:
 
 ```shell script
+> go get github.com/gochain/gofs/cmd/gofs
 > go install github.com/gochain/gofs/cmd/gofs
 ```
 
