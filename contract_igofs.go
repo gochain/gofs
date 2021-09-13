@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/gochain/gochain/v3"
+	gochain "github.com/gochain/gochain/v3"
 	"github.com/gochain/gochain/v3/accounts/abi"
 	"github.com/gochain/gochain/v3/accounts/abi/bind"
 	"github.com/gochain/gochain/v3/common"
@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = gochain.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -29,22 +28,6 @@ var (
 
 // IGOFSABI is the input ABI used to generate the binding from.
 const IGOFSABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"newWallet\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rate\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"pin\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"cid\",\"type\":\"bytes\"}],\"name\":\"wallet\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"cidByHash\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deployed\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"bh\",\"type\":\"uint256\"}],\"name\":\"Pinned\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"cid\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"wallet\",\"type\":\"address\"}],\"name\":\"CreatedWallet\",\"type\":\"event\"}]"
-
-// IGOFSBin is the compiled bytecode used for deploying new contracts.
-const IGOFSBin = `0x`
-
-// DeployIGOFS deploys a new GoChain contract, binding an instance of IGOFS to it.
-func DeployIGOFS(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *IGOFS, error) {
-	parsed, err := abi.JSON(strings.NewReader(IGOFSABI))
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(IGOFSBin), backend)
-	if err != nil {
-		return common.Address{}, nil, nil, err
-	}
-	return address, tx, &IGOFS{IGOFSCaller: IGOFSCaller{contract: contract}, IGOFSTransactor: IGOFSTransactor{contract: contract}, IGOFSFilterer: IGOFSFilterer{contract: contract}}, nil
-}
 
 // IGOFS is an auto generated Go binding around an GoChain contract.
 type IGOFS struct {
@@ -154,7 +137,7 @@ func bindIGOFS(address common.Address, caller bind.ContractCaller, transactor bi
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IGOFS *IGOFSRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IGOFS *IGOFSRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IGOFS.Contract.IGOFSCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -173,7 +156,7 @@ func (_IGOFS *IGOFSRaw) Transact(opts *bind.TransactOpts, method string, params 
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IGOFS *IGOFSCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IGOFS *IGOFSCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IGOFS.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -190,104 +173,124 @@ func (_IGOFS *IGOFSTransactorRaw) Transact(opts *bind.TransactOpts, method strin
 
 // CidByHash is a free data retrieval call binding the contract method 0xe16cf225.
 //
-// Solidity: function cidByHash(bytes32 hash) constant returns(bytes)
+// Solidity: function cidByHash(bytes32 hash) view returns(bytes)
 func (_IGOFS *IGOFSCaller) CidByHash(opts *bind.CallOpts, hash [32]byte) ([]byte, error) {
-	var (
-		ret0 = new([]byte)
-	)
-	out := ret0
-	err := _IGOFS.contract.Call(opts, out, "cidByHash", hash)
-	return *ret0, err
+	var out []interface{}
+	err := _IGOFS.contract.Call(opts, &out, "cidByHash", hash)
+
+	if err != nil {
+		return *new([]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
+
+	return out0, err
+
 }
 
 // CidByHash is a free data retrieval call binding the contract method 0xe16cf225.
 //
-// Solidity: function cidByHash(bytes32 hash) constant returns(bytes)
+// Solidity: function cidByHash(bytes32 hash) view returns(bytes)
 func (_IGOFS *IGOFSSession) CidByHash(hash [32]byte) ([]byte, error) {
 	return _IGOFS.Contract.CidByHash(&_IGOFS.CallOpts, hash)
 }
 
 // CidByHash is a free data retrieval call binding the contract method 0xe16cf225.
 //
-// Solidity: function cidByHash(bytes32 hash) constant returns(bytes)
+// Solidity: function cidByHash(bytes32 hash) view returns(bytes)
 func (_IGOFS *IGOFSCallerSession) CidByHash(hash [32]byte) ([]byte, error) {
 	return _IGOFS.Contract.CidByHash(&_IGOFS.CallOpts, hash)
 }
 
 // Deployed is a free data retrieval call binding the contract method 0xf905c15a.
 //
-// Solidity: function deployed() constant returns(uint256)
+// Solidity: function deployed() view returns(uint256)
 func (_IGOFS *IGOFSCaller) Deployed(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _IGOFS.contract.Call(opts, out, "deployed")
-	return *ret0, err
+	var out []interface{}
+	err := _IGOFS.contract.Call(opts, &out, "deployed")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // Deployed is a free data retrieval call binding the contract method 0xf905c15a.
 //
-// Solidity: function deployed() constant returns(uint256)
+// Solidity: function deployed() view returns(uint256)
 func (_IGOFS *IGOFSSession) Deployed() (*big.Int, error) {
 	return _IGOFS.Contract.Deployed(&_IGOFS.CallOpts)
 }
 
 // Deployed is a free data retrieval call binding the contract method 0xf905c15a.
 //
-// Solidity: function deployed() constant returns(uint256)
+// Solidity: function deployed() view returns(uint256)
 func (_IGOFS *IGOFSCallerSession) Deployed() (*big.Int, error) {
 	return _IGOFS.Contract.Deployed(&_IGOFS.CallOpts)
 }
 
 // Rate is a free data retrieval call binding the contract method 0x2c4e722e.
 //
-// Solidity: function rate() constant returns(uint256)
+// Solidity: function rate() view returns(uint256)
 func (_IGOFS *IGOFSCaller) Rate(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _IGOFS.contract.Call(opts, out, "rate")
-	return *ret0, err
+	var out []interface{}
+	err := _IGOFS.contract.Call(opts, &out, "rate")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // Rate is a free data retrieval call binding the contract method 0x2c4e722e.
 //
-// Solidity: function rate() constant returns(uint256)
+// Solidity: function rate() view returns(uint256)
 func (_IGOFS *IGOFSSession) Rate() (*big.Int, error) {
 	return _IGOFS.Contract.Rate(&_IGOFS.CallOpts)
 }
 
 // Rate is a free data retrieval call binding the contract method 0x2c4e722e.
 //
-// Solidity: function rate() constant returns(uint256)
+// Solidity: function rate() view returns(uint256)
 func (_IGOFS *IGOFSCallerSession) Rate() (*big.Int, error) {
 	return _IGOFS.Contract.Rate(&_IGOFS.CallOpts)
 }
 
 // Wallet is a free data retrieval call binding the contract method 0xc5bf2249.
 //
-// Solidity: function wallet(bytes cid) constant returns(address)
+// Solidity: function wallet(bytes cid) view returns(address)
 func (_IGOFS *IGOFSCaller) Wallet(opts *bind.CallOpts, cid []byte) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _IGOFS.contract.Call(opts, out, "wallet", cid)
-	return *ret0, err
+	var out []interface{}
+	err := _IGOFS.contract.Call(opts, &out, "wallet", cid)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Wallet is a free data retrieval call binding the contract method 0xc5bf2249.
 //
-// Solidity: function wallet(bytes cid) constant returns(address)
+// Solidity: function wallet(bytes cid) view returns(address)
 func (_IGOFS *IGOFSSession) Wallet(cid []byte) (common.Address, error) {
 	return _IGOFS.Contract.Wallet(&_IGOFS.CallOpts, cid)
 }
 
 // Wallet is a free data retrieval call binding the contract method 0xc5bf2249.
 //
-// Solidity: function wallet(bytes cid) constant returns(address)
+// Solidity: function wallet(bytes cid) view returns(address)
 func (_IGOFS *IGOFSCallerSession) Wallet(cid []byte) (common.Address, error) {
 	return _IGOFS.Contract.Wallet(&_IGOFS.CallOpts, cid)
 }
@@ -315,21 +318,21 @@ func (_IGOFS *IGOFSTransactorSession) NewWallet(cid []byte) (*types.Transaction,
 
 // Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid) returns()
+// Solidity: function pin(bytes cid) payable returns()
 func (_IGOFS *IGOFSTransactor) Pin(opts *bind.TransactOpts, cid []byte) (*types.Transaction, error) {
 	return _IGOFS.contract.Transact(opts, "pin", cid)
 }
 
 // Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid) returns()
+// Solidity: function pin(bytes cid) payable returns()
 func (_IGOFS *IGOFSSession) Pin(cid []byte) (*types.Transaction, error) {
 	return _IGOFS.Contract.Pin(&_IGOFS.TransactOpts, cid)
 }
 
 // Pin is a paid mutator transaction binding the contract method 0x7d1962f8.
 //
-// Solidity: function pin(bytes cid) returns()
+// Solidity: function pin(bytes cid) payable returns()
 func (_IGOFS *IGOFSTransactorSession) Pin(cid []byte) (*types.Transaction, error) {
 	return _IGOFS.Contract.Pin(&_IGOFS.TransactOpts, cid)
 }
@@ -476,6 +479,18 @@ func (_IGOFS *IGOFSFilterer) WatchCreatedWallet(opts *bind.WatchOpts, sink chan<
 	}), nil
 }
 
+// ParseCreatedWallet is a log parse operation binding the contract event 0x89c3649b91d0d77a0655fa3d84b050b21c775ba31bfbc37e440ec3ee04f28927.
+//
+// Solidity: event CreatedWallet(address indexed user, bytes indexed cid, address wallet)
+func (_IGOFS *IGOFSFilterer) ParseCreatedWallet(log types.Log) (*IGOFSCreatedWallet, error) {
+	event := new(IGOFSCreatedWallet)
+	if err := _IGOFS.contract.UnpackLog(event, "CreatedWallet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // IGOFSPinnedIterator is returned from FilterPinned and is used to iterate over the raw logs and unpacked data for Pinned events raised by the IGOFS contract.
 type IGOFSPinnedIterator struct {
 	Event *IGOFSPinned // Event containing the contract specifics and raw log
@@ -617,3 +632,16 @@ func (_IGOFS *IGOFSFilterer) WatchPinned(opts *bind.WatchOpts, sink chan<- *IGOF
 		}
 	}), nil
 }
+
+// ParsePinned is a log parse operation binding the contract event 0x7c80eb99758dfe3e8aef5df583c1c9bab5369cf46b930b802f130edcfeac90ca.
+//
+// Solidity: event Pinned(address indexed user, bytes indexed cid, uint256 bh)
+func (_IGOFS *IGOFSFilterer) ParsePinned(log types.Log) (*IGOFSPinned, error) {
+	event := new(IGOFSPinned)
+	if err := _IGOFS.contract.UnpackLog(event, "Pinned", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
