@@ -1,7 +1,6 @@
 package gofs
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"errors"
@@ -104,8 +103,8 @@ func Pin(ctx context.Context, rpcURL string, contract common.Address, pk *ecdsa.
 	opts := &bind.TransactOpts{
 		Context: ctx,
 		From:    crypto.PubkeyToAddress(pk.PublicKey),
-		Signer: func(s types.Signer, _ common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			return types.SignTx(tx, s, pk)
+		Signer: func(_ common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			return types.SignTx(tx, types.HomesteadSigner{}, pk)
 		},
 		GasLimit: 100000,
 		Value:    cost,
@@ -161,8 +160,8 @@ func NewWallet(ctx context.Context, rpcURL string, contract common.Address, pk *
 	tx, err := p.NewWallet(&bind.TransactOpts{
 		Context: ctx,
 		From:    crypto.PubkeyToAddress(pk.PublicKey),
-		Signer: func(s types.Signer, _ common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			return types.SignTx(tx, s, pk)
+		Signer: func(_ common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			return types.SignTx(tx, types.HomesteadSigner{}, pk)
 		},
 	}, cid.Bytes())
 	r, err := WaitForReceipt(ctx, gc, tx.Hash())
@@ -203,14 +202,6 @@ type EventFilter struct {
 
 type PinInputs struct {
 	CID []byte `abi:"cid"`
-}
-
-// UnpackPinInputs returns arguments from a pin call.
-// Handles full tx data, or plain inputs.
-func UnpackPinInputs(data []byte) (pi PinInputs, err error) {
-	data = bytes.TrimPrefix(data, pinMethod.Id())
-	err = pinMethod.Inputs.Unpack(&pi, data)
-	return
 }
 
 type Receipt struct {
@@ -259,7 +250,7 @@ func Receipts(ctx context.Context, rpcURL string, contract common.Address, filte
 			cidTopic[i] = crypto.Keccak256Hash(ci.Bytes())
 		}
 	}
-	q.Topics = [][]common.Hash{{pinnerABI.Events["Pinned"].Id()}, userTopic, cidTopic}
+	q.Topics = [][]common.Hash{{pinnerABI.Events["Pinned"].ID}, userTopic, cidTopic}
 	logs, err := gc.FilterLogs(ctx, q)
 	if err != nil {
 		return nil, err
